@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { Users, Crown, Zap, Shield, ShieldCheck, Swords, Percent, EyeOff, Sparkles, Play, Copy, Check, ArrowRight, Trophy, Clock, Plus, Minus, MapPin, RefreshCw, Skull, Heart, Cast, Info, BarChart3, Hourglass } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set as fbSet, query, orderByKey, startAt, endAt } from "firebase/database";
@@ -21,6 +21,374 @@ const db = getDatabase(firebaseApp);
 /* ---------------------------------------------------------
    FONTS
 --------------------------------------------------------- */
+/* ---------------------------------------------------------
+   INTERNATIONALISATION (FR / EN)
+--------------------------------------------------------- */
+const LANG_STORAGE_KEY = "quizi_lang";
+function getStoredLang() {
+  try { const v = localStorage.getItem(LANG_STORAGE_KEY); return v === "en" ? "en" : "fr"; } catch { return "fr"; }
+}
+function storeLang(l) { try { localStorage.setItem(LANG_STORAGE_KEY, l); } catch {} }
+
+const STRINGS = {
+  fr: {
+    appTagline: "Culture générale, questions insolites, jokers vicieux. Un écran (TV ou téléphone casté) pour l'hôte, un téléphone par joueur.",
+    createGame: "Créer une partie (hôte)",
+    joinGame: "Rejoindre une partie",
+    blindTestBtn: "🎧 Blind Test musical",
+    enchereBtn: "💰 Quitte ou Double",
+    matchAmorBtn: "Match Amor 💔",
+    soloBtn: "Jouer seul",
+    back: "← Retour",
+    continueBtn: "C'est parti !",
+    yourJokersTitle: "Tes jokers pour la partie",
+    joinRoomBtn: "Rejoindre la salle",
+    exampleLabel: "💡 Exemple concret",
+    explainClassicTitle: "Quiz Classique",
+    explainClassicB1: "Chaque joueur répond depuis son téléphone, l'hôte affiche les questions sur un grand écran (TV, PC, tablette...).",
+    explainClassicB2: "Plus tu réponds vite ET juste, plus tu marques de points — de 50 à 100 points par bonne réponse selon ta rapidité.",
+    explainClassicB3: "Jokers en option : vole des points à un adversaire, bloque-le, réduis son temps de réponse...",
+    explainClassicB4: "Le classement se met à jour après chaque question, jusqu'au classement final et aux prix spéciaux.",
+    explainClassicExample: "Sur une question à 20 secondes : réponds juste en 2 secondes → 95 points. Réponds juste à la 19ᵉ seconde → seulement 51 points. Une mauvaise réponse ne rapporte rien (ou un malus si l'hôte l'a activé).",
+    explainSoloTitle: "Jouer seul",
+    explainSoloB1: "Entraîne-toi à ton rythme, sans autres joueurs — parfait pour découvrir les catégories avant une vraie partie.",
+    explainSoloB2: "Mode Crash Test : le temps est illimité par question, mais 3 erreurs et c'est terminé !",
+    explainSoloB3: "Pas de jokers en solo : ils demandent un adversaire à cibler.",
+    explainMatchAmorTitle: "Match Amor",
+    explainMatchAmorB1: "Chaque question élimine les joueurs qui se trompent — réponds juste pour rester en course.",
+    explainMatchAmorB2: "Si tout le monde se trompe (ou si tout le monde répond juste), personne n'est éliminé ce tour-ci.",
+    explainMatchAmorB3: "Le dernier joueur encore en vie remporte la partie.",
+    explainBlindTestTitle: "Blind Test musical",
+    explainBlindTestB1: "Le son se joue depuis l'écran de l'hôte — les joueurs répondent simplement depuis leur téléphone.",
+    explainBlindTestB2: "Choisis l'effet : normal, ralenti, accéléré, ou juste les 2 premières secondes de l'intro.",
+    explainBlindTestB3: "Types de questions : titre du morceau, artiste, année de sortie, origine de l'artiste.",
+    explainEnchereTitle: "Quitte ou Double",
+    explainEnchereB1: "Chaque joueur démarre avec le même capital de points (10 000 par défaut).",
+    explainEnchereB2: "Avant chaque question, tu vois seulement le thème et un indice de difficulté — à toi de miser le montant de ton choix.",
+    explainEnchereB3: "Bonne réponse : ta mise est doublée et ajoutée à ton total. Mauvaise réponse : tu perds ta mise.",
+    explainEnchereB4: "Si tu tombes à 0 point, tu es éliminé : impossible de miser à nouveau.",
+    explainEnchereB5: "À la fin des questions, le joueur avec le plus de points remporte la partie.",
+    explainEnchereExample: "Tu as 1000 points et tu mises 300 sur une question annoncée 🔴 Difficile. Bonne réponse → tu gagnes 300 pts (total 1300). Mauvaise réponse → tu perds ta mise (total 700).",
+    roomSettingsTitle: "Réglages de la partie",
+    castHint: "Sur téléphone : utilise l'affichage sans fil (AirPlay / Chromecast) pour caster cet écran sur la TV.",
+    categoriesLabel: "Catégories",
+    checkAll: "Tout cocher",
+    uncheckAll: "Tout décocher",
+    kidsMode: "🎈 Mode Kids (fin primaire / collège)",
+    questionTypesLabel: "Types de questions",
+    qcmLabel: "QCM",
+    vfLabel: "Vrai / Faux",
+    echelleLabel: "Réponse chiffrée",
+    nbQuestionsLabel: "Nombre de questions",
+    secondsPerQuestionLabel: "Secondes par question",
+    teamsModeLabel: "Mode équipes (composées par toi, l'hôte, dans le salon)",
+    soloForAll: "Chacun pour soi",
+    teamsCount: "équipes",
+    jokersEnabledLabel: "Jokers activés (1 fois par partie chacun, 1 joker max par question)",
+    jokerAttribLabel: "Attribution des jokers",
+    jokerManual: "Les joueurs choisissent eux-mêmes",
+    jokerRandomLabel: "Attribution aléatoire 🎴",
+    jokerManualHint: "Chaque joueur choisira lui-même ses jokers parmi ceux activés ci-dessus (un seul de chaque type).",
+    jokerRandomHint: "L'ordinateur tire au sort les jokers de chaque joueur.",
+    jokersPerPlayerLabel: "Jokers par joueur :",
+    malusLabel: "Malus en cas de mauvaise réponse (bonus max toujours 100 pts)",
+    malusNone: "Aucun",
+    hostPlaysLabel: "L'hôte joue aussi ?",
+    hostPlaysNo: "Non, juste animateur",
+    hostPlaysYes: "Oui, je participe aussi",
+    hostPlaysWarning: "⚠️ Sans jokers pour toi, pour garder le jeu simple depuis l'écran d'hôte.",
+    hostPseudoPlaceholder: "Ton pseudo (optionnel)",
+    createRoomBtn: "Créer la salle",
+    joinTitle: "Rejoindre",
+    roomCodeLabel: "Code de la salle",
+    roomCodePlaceholder: "EX: FUNK",
+    errCodeLength: "Le code fait 4 lettres.",
+    errRoomNotFound: "Salle introuvable, vérifie le code.",
+    errChoosePseudo: "Choisis un pseudo.",
+    errChooseAnimal: "Choisis un animal.",
+    loadingDots: "...",
+    continueSimple: "Continuer",
+    yourPseudoTitle: "Ton pseudo",
+    pseudoPlaceholder: "Écris ton pseudo...",
+    pseudoHint: "✨ le bouton génère un pseudo fun si tu manques d'inspiration. Si tu retapes exactement le même pseudo qu'avant dans cette salle, tu retrouves ta place et tes points.",
+    yourAvatarTitle: "Ton avatar",
+    avatarHint: "Choisis ton animal (déjà pris = indisponible)",
+    joinPartyBtn: "Rejoindre la partie",
+    jokerBoxTitle: "La boîte à jokers",
+    jokerTutoRandom: "Tirage au sort ce soir : tu repartiras avec {n} joker(s) parmi la liste ci-dessous. Un seul joker par question !",
+    jokerTutoManual: "Sur l'écran suivant, choisis toi-même {n} joker(s) parmi la liste ci-dessous. Un seul joker par question !",
+    noJokerThisGame: "Aucun joker activé pour cette partie.",
+    drawJokersTitle: "Tire tes jokers 🎴",
+    pickJokersTitle: "Choisis tes jokers 🎯",
+    drawChooseCards: "Choisis {n} carte(s) parmi {total}. Le mélange est propre à toi seul, personne ne peut tricher.",
+    pickChooseJokers: "Sélectionne {n} joker(s) parmi {total} — un seul de chaque type. Ce sera les tiens pour toute la partie.",
+    alreadyRevealed: "Déjà révélé(s) :",
+    selectedCount: "sélectionné(s)",
+    validateMyJokers: "Valider mes jokers",
+    waitingForHost: "En attente que l'hôte lance la partie... 🎬",
+    playersInRoom: "Joueurs dans la salle",
+    yourJokersColon: "Tes jokers pour cette partie :",
+    noJokerForGame: "Aucun joker pour cette partie.",
+    launchGame: "Lancer la partie",
+    joinWithCode: "Rejoignez avec le code",
+    castRoomHint: "Sur téléphone : caste cet écran via AirPlay / Chromecast pour l'afficher sur la TV",
+    linkCopiedMsg: "Lien copié ✓",
+    copyLinkBtn: "📋 Copier le lien de la partie",
+    pasteLinkHint: "À coller dans un SMS/WhatsApp — ouvre l'appli avec le code déjà rempli",
+    scanHint: "📷 Ou scanne pour rejoindre directement",
+    clickToChangeTeam: " — clique un joueur pour changer son équipe",
+    waitingPlayersLobby: "En attente de joueurs...",
+    teamWord: "Équipe",
+    roomWord: "Salle",
+    loadingSimple: "Chargement...",
+    questionsWord: "questions",
+    tracksWord: "morceaux",
+    questionWord: "Question",
+    answersWord: "réponses",
+    hostAnswerTitle: "🎤 Ta réponse (hôte)",
+    waitingForTargetAnswer: "👀 En attente de la réponse de {name}...",
+    targetAnswered: "👀 {name} a répondu : {value}",
+    yourTargetFallback: "ta cible",
+    yourTargetFallbackCap: "Ta cible",
+    yourJokersShort: "Tes jokers",
+    chooseTargetCancelHint: "Choisis ta cible (tu peux aussi répondre directement, ça annulera ce joker)",
+    playerAnswersTitle: "Réponses des joueurs",
+    seeWinner: "Voir le vainqueur",
+    revealResultsNow: "Révéler les résultats maintenant",
+    nextTrack: "Morceau suivant",
+    timeReducedMsg: "⏱️ Ton temps a été réduit par un adversaire !",
+    targetedByMsg: "🎯 {names} {verb} ciblé sur cette question !",
+    targetedVerbPlural: "t'ont",
+    targetedVerbSingular: "t'a",
+    finalRanking: "Classement final",
+    teamRanking: "Classement par équipe",
+    replaySame: "Rejouer (mêmes joueurs)",
+    newGameHome: "Nouvelle partie depuis l'accueil",
+    serialKiller: "Serial Killeur",
+    victimAward: "Victimos",
+    pointsStolen: "pts volés aux autres",
+    pointsSuffered: "pts subis",
+    calculating: "Calcul en cours...",
+    answerSubmitted: "Réponse envoyée ✅",
+    timeUp: "Temps écoulé ⏱️",
+    waitingOthers: "En attente des autres joueurs...",
+    availableJokers: "Jokers disponibles",
+    alreadyUsedAll: "Tu as déjà utilisé tous tes jokers.",
+    chooseTarget: "Choisis ta cible",
+    chooseTargetHint: "(tu peux aussi répondre directement, ça annulera ce joker)",
+    cancel: "Annuler",
+    provisionalRanking: "🏆 Classement provisoire",
+    you: " (toi)",
+    revealNow: "Révéler maintenant",
+    nextQuestion: "Question suivante",
+    finalRankingBtn: "Voir le classement final",
+    validate: "Valider",
+    trueLabel: "Vrai",
+    falseLabel: "Faux",
+    listening: "🔊 Écoutez sur cet écran...",
+    j_5050_label: "50/50", j_5050_desc: "Retire 2 mauvaises réponses (QCM uniquement).",
+    j_x2_label: "x2", j_x2_desc: "Double tes points si tu réponds juste à cette question.",
+    j_steal_label: "Vol de points", j_steal_desc: "Si tu réponds juste, vole 30 points à l'adversaire de ton choix.",
+    j_block_label: "Blocage", j_block_desc: "Si tu réponds juste, l'adversaire ciblé ne marque aucun point sur cette question.",
+    j_speedchrono_label: "Speed Chrono", j_speedchrono_desc: "Divise par deux le temps restant d'un adversaire pour répondre à cette question.",
+    j_copieur_label: "Copieur", j_copieur_desc: "Espionne la réponse déjà validée d'un adversaire avant de donner la tienne (s'il n'a pas encore répondu, tu ne verras rien).",
+    j_bouclier_label: "Bouclier", j_bouclier_desc: "Te protège d'un Vol de points ou d'un Blocage pendant cette question.",
+    j_sondage_label: "Sondage", j_sondage_desc: "Affiche en direct le pourcentage de joueurs ayant choisi chaque réponse (QCM uniquement).",
+    j_voleurtemps_label: "Voleur du Temps", j_voleurtemps_desc: "Vole 3 secondes à TOUS les autres joueurs sur cette question — le temps volé t'est intégralement reversé.",
+    cat_animaux: "Animaux", cat_geo: "Géographie", cat_sport: "Sport", cat_films: "Films & Séries", cat_records: "Records inutiles",
+    cat_disney: "Disney", cat_bouffe: "Alimentation & Restauration", cat_logique: "Logique", cat_jv: "Jeux vidéo", cat_actu: "Ça a fait l'actu",
+    cat_ortho: "Pièges d'orthographe", cat_annees2000: "Ambiance Années 2000", cat_musique: "Culture Musicale", cat_adulte18: "Ambiance -18",
+    kcat_animaux: "Animaux", kcat_nature: "Sciences & Nature", kcat_contes: "Contes & Dessins animés", kcat_sport: "Sport", kcat_geo: "Géo Facile", kcat_logique: "Logique Enfant",
+  },
+  en: {
+    appTagline: "General knowledge, quirky questions, nasty jokers. One screen (TV or casted phone) for the host, one phone per player.",
+    createGame: "Create a game (host)",
+    joinGame: "Join a game",
+    blindTestBtn: "🎧 Music Blind Test",
+    enchereBtn: "💰 Double or Nothing",
+    matchAmorBtn: "Love Match 💔",
+    soloBtn: "Play solo",
+    back: "← Back",
+    continueBtn: "Let's go!",
+    yourJokersTitle: "Your jokers for the game",
+    joinRoomBtn: "Join the room",
+    exampleLabel: "💡 Concrete example",
+    explainClassicTitle: "Classic Quiz",
+    explainClassicB1: "Each player answers from their phone, the host displays the questions on a big screen (TV, PC, tablet...).",
+    explainClassicB2: "The faster AND more accurate you are, the more points you score — from 50 to 100 points per correct answer depending on your speed.",
+    explainClassicB3: "Optional jokers: steal points from an opponent, block them, reduce their answer time...",
+    explainClassicB4: "The leaderboard updates after every question, up to the final ranking and special awards.",
+    explainClassicExample: "On a 20-second question: answer correctly in 2 seconds → 95 points. Answer correctly at second 19 → only 51 points. A wrong answer scores nothing (or a penalty if the host enabled it).",
+    explainSoloTitle: "Play Solo",
+    explainSoloB1: "Practice at your own pace, no other players — perfect for discovering categories before a real game.",
+    explainSoloB2: "Crash Test mode: unlimited time per question, but 3 mistakes and it's over!",
+    explainSoloB3: "No jokers in solo mode: they need an opponent to target.",
+    explainMatchAmorTitle: "Love Match",
+    explainMatchAmorB1: "Every question eliminates the players who get it wrong — answer correctly to stay in the game.",
+    explainMatchAmorB2: "If everyone gets it wrong (or everyone gets it right), no one is eliminated this round.",
+    explainMatchAmorB3: "The last player standing wins the game.",
+    explainBlindTestTitle: "Music Blind Test",
+    explainBlindTestB1: "The sound plays from the host's screen — players simply answer from their phone.",
+    explainBlindTestB2: "Choose the effect: normal, slowed down, sped up, or just the first 2 seconds of the intro.",
+    explainBlindTestB3: "Question types: track title, artist, release year, artist's origin.",
+    explainEnchereTitle: "Double or Nothing",
+    explainEnchereB1: "Every player starts with the same amount of points (10,000 by default).",
+    explainEnchereB2: "Before each question, you only see the theme and a difficulty hint — it's up to you to bet whatever amount you choose.",
+    explainEnchereB3: "Correct answer: your bet is doubled and added to your total. Wrong answer: you lose your bet.",
+    explainEnchereB4: "If you drop to 0 points, you're eliminated: no more betting.",
+    explainEnchereB5: "At the end of the questions, the player with the most points wins the game.",
+    explainEnchereExample: "You have 1000 points and bet 300 on a question marked 🔴 Hard. Correct answer → you gain 300 pts (total 1300). Wrong answer → you lose your bet (total 700).",
+    roomSettingsTitle: "Game settings",
+    castHint: "On phone: use wireless display (AirPlay / Chromecast) to cast this screen to the TV.",
+    categoriesLabel: "Categories",
+    checkAll: "Check all",
+    uncheckAll: "Uncheck all",
+    kidsMode: "🎈 Kids mode (upper elementary / middle school)",
+    questionTypesLabel: "Question types",
+    qcmLabel: "Multiple choice",
+    vfLabel: "True / False",
+    echelleLabel: "Numeric answer",
+    nbQuestionsLabel: "Number of questions",
+    secondsPerQuestionLabel: "Seconds per question",
+    teamsModeLabel: "Team mode (set up by you, the host, in the lobby)",
+    soloForAll: "Everyone for themselves",
+    teamsCount: "teams",
+    jokersEnabledLabel: "Enabled jokers (once per game each, 1 joker max per question)",
+    jokerAttribLabel: "Joker assignment",
+    jokerManual: "Players choose their own",
+    jokerRandomLabel: "Random assignment 🎴",
+    jokerManualHint: "Each player will choose their own jokers among those enabled above (one of each type).",
+    jokerRandomHint: "The computer randomly draws each player's jokers.",
+    jokersPerPlayerLabel: "Jokers per player:",
+    malusLabel: "Penalty for a wrong answer (bonus is always capped at 100 pts)",
+    malusNone: "None",
+    hostPlaysLabel: "Does the host play too?",
+    hostPlaysNo: "No, just hosting",
+    hostPlaysYes: "Yes, I'm playing too",
+    hostPlaysWarning: "⚠️ No jokers for you, to keep things simple from the host screen.",
+    hostPseudoPlaceholder: "Your nickname (optional)",
+    createRoomBtn: "Create the room",
+    joinTitle: "Join",
+    roomCodeLabel: "Room code",
+    roomCodePlaceholder: "E.G.: FUNK",
+    errCodeLength: "The code is 4 letters long.",
+    errRoomNotFound: "Room not found, check the code.",
+    errChoosePseudo: "Choose a nickname.",
+    errChooseAnimal: "Choose an animal.",
+    loadingDots: "...",
+    continueSimple: "Continue",
+    yourPseudoTitle: "Your nickname",
+    pseudoPlaceholder: "Type your nickname...",
+    pseudoHint: "✨ tap the button to generate a fun nickname if you're out of ideas. If you type the exact same nickname as before in this room, you'll get your spot and points back.",
+    yourAvatarTitle: "Your avatar",
+    avatarHint: "Pick your animal (already taken = unavailable)",
+    joinPartyBtn: "Join the game",
+    jokerBoxTitle: "The joker box",
+    jokerTutoRandom: "Tonight's random draw: you'll get {n} joker(s) from the list below. Only one joker per question!",
+    jokerTutoManual: "On the next screen, choose {n} joker(s) yourself from the list below. Only one joker per question!",
+    noJokerThisGame: "No jokers enabled for this game.",
+    drawJokersTitle: "Draw your jokers 🎴",
+    pickJokersTitle: "Choose your jokers 🎯",
+    drawChooseCards: "Choose {n} card(s) out of {total}. The shuffle is yours alone, no one can cheat.",
+    pickChooseJokers: "Select {n} joker(s) out of {total} — only one of each type. These will be yours for the whole game.",
+    alreadyRevealed: "Already revealed:",
+    selectedCount: "selected",
+    validateMyJokers: "Confirm my jokers",
+    waitingForHost: "Waiting for the host to start the game... 🎬",
+    playersInRoom: "Players in the room",
+    yourJokersColon: "Your jokers for this game:",
+    noJokerForGame: "No jokers for this game.",
+    launchGame: "Start the game",
+    joinWithCode: "Join with the code",
+    castRoomHint: "On phone: cast this screen via AirPlay / Chromecast to display it on the TV",
+    linkCopiedMsg: "Link copied ✓",
+    copyLinkBtn: "📋 Copy game link",
+    pasteLinkHint: "Paste into a text/WhatsApp message — opens the app with the code already filled in",
+    scanHint: "📷 Or scan to join directly",
+    clickToChangeTeam: " — tap a player to change their team",
+    waitingPlayersLobby: "Waiting for players...",
+    teamWord: "Team",
+    roomWord: "Room",
+    loadingSimple: "Loading...",
+    questionsWord: "questions",
+    tracksWord: "tracks",
+    questionWord: "Question",
+    answersWord: "answers",
+    hostAnswerTitle: "🎤 Your answer (host)",
+    waitingForTargetAnswer: "👀 Waiting for {name}'s answer...",
+    targetAnswered: "👀 {name} answered: {value}",
+    yourTargetFallback: "your target",
+    yourTargetFallbackCap: "Your target",
+    yourJokersShort: "Your jokers",
+    chooseTargetCancelHint: "Choose your target (you can also answer directly, this will cancel this joker)",
+    playerAnswersTitle: "Players' answers",
+    seeWinner: "See the winner",
+    revealResultsNow: "Reveal results now",
+    nextTrack: "Next track",
+    timeReducedMsg: "⏱️ Your time was reduced by an opponent!",
+    targetedByMsg: "🎯 {names} targeted you on this question!",
+    targetedVerbPlural: "",
+    targetedVerbSingular: "",
+    finalRanking: "Final ranking",
+    teamRanking: "Team ranking",
+    replaySame: "Play again (same players)",
+    newGameHome: "New game from home",
+    serialKiller: "Serial Killer",
+    victimAward: "Top Victim",
+    pointsStolen: "pts stolen from others",
+    pointsSuffered: "pts suffered",
+    calculating: "Calculating...",
+    answerSubmitted: "Answer sent ✅",
+    timeUp: "Time's up ⏱️",
+    waitingOthers: "Waiting for other players...",
+    availableJokers: "Available jokers",
+    alreadyUsedAll: "You've already used all your jokers.",
+    chooseTarget: "Choose your target",
+    chooseTargetHint: "(you can also answer directly, this will cancel this joker)",
+    cancel: "Cancel",
+    provisionalRanking: "🏆 Provisional ranking",
+    you: " (you)",
+    revealNow: "Reveal now",
+    nextQuestion: "Next question",
+    finalRankingBtn: "See final ranking",
+    validate: "Confirm",
+    trueLabel: "True",
+    falseLabel: "False",
+    listening: "🔊 Listen on this screen...",
+    j_5050_label: "50/50", j_5050_desc: "Removes 2 wrong answers (multiple choice only).",
+    j_x2_label: "x2", j_x2_desc: "Doubles your points if you answer this question correctly.",
+    j_steal_label: "Point Steal", j_steal_desc: "If you answer correctly, steal 30 points from the opponent of your choice.",
+    j_block_label: "Block", j_block_desc: "If you answer correctly, the targeted opponent scores no points on this question.",
+    j_speedchrono_label: "Speed Chrono", j_speedchrono_desc: "Halves an opponent's remaining time to answer this question.",
+    j_copieur_label: "Copycat", j_copieur_desc: "Spy on an opponent's already-submitted answer before giving yours (if they haven't answered yet, you'll see nothing).",
+    j_bouclier_label: "Shield", j_bouclier_desc: "Protects you from a Point Steal or Block on this question.",
+    j_sondage_label: "Poll", j_sondage_desc: "Shows live the percentage of players who picked each answer (multiple choice only).",
+    j_voleurtemps_label: "Time Thief", j_voleurtemps_desc: "Steals 3 seconds from ALL other players on this question — the stolen time is fully credited to you.",
+    cat_animaux: "Animals", cat_geo: "Geography", cat_sport: "Sports", cat_films: "Movies & TV Shows", cat_records: "Pointless Records",
+    cat_disney: "Disney", cat_bouffe: "Food & Dining", cat_logique: "Logic", cat_jv: "Video Games", cat_actu: "In the News",
+    cat_ortho: "Spelling Traps", cat_annees2000: "2000s Vibes", cat_musique: "Music Culture", cat_adulte18: "18+ Vibes",
+    kcat_animaux: "Animals", kcat_nature: "Science & Nature", kcat_contes: "Tales & Cartoons", kcat_sport: "Sports", kcat_geo: "Easy Geography", kcat_logique: "Kids Logic",
+  },
+};
+
+const LangContext = createContext({ lang: "fr", t: (k) => STRINGS.fr[k] || k });
+function useLang() { return useContext(LangContext); }
+function t(lang, key) { return (STRINGS[lang] && STRINGS[lang][key]) || STRINGS.fr[key] || key; }
+function jokerLabel(j, lang) { return t(lang, `j_${j.id}_label`); }
+function jokerDesc(j, lang) { return t(lang, `j_${j.id}_desc`); }
+function categoryLabel(cat, lang) { return t(lang, `cat_${cat.id}`); }
+function kidsCategoryLabel(cat, lang) { return t(lang, `kcat_${cat.id.replace("k_", "")}`); }
+
+function LangSwitch({ lang, setLang }) {
+  return (
+    <div className="flex gap-2 justify-center mb-4">
+      <button onClick={() => setLang("fr")} className="rounded-full px-3 py-1 text-sm font-bold" style={{ background: lang === "fr" ? C.gold : "rgba(255,255,255,0.08)", color: lang === "fr" ? "#1B1030" : C.cream }}>🇫🇷 FR</button>
+      <button onClick={() => setLang("en")} className="rounded-full px-3 py-1 text-sm font-bold" style={{ background: lang === "en" ? C.gold : "rgba(255,255,255,0.08)", color: lang === "en" ? "#1B1030" : C.cream }}>🇬🇧 EN</button>
+    </div>
+  );
+}
+
+
 function useGoogleFonts() {
   useEffect(() => {
     const id = "quiz-app-fonts";
@@ -75,6 +443,7 @@ function FallingEmojis({ emojis, count = 24, side }) {
    EXPLICATION DE MODE (page ludique avant chaque mode)
 --------------------------------------------------------- */
 function ModeExplainer({ emoji, title, color, bullets, example, onContinue, onBack }) {
+  const { t: tr } = useLang();
   return (
     <Stage wide>
       <ScreenHeader title={`${emoji} ${title}`} onBack={onBack} color={color} />
@@ -88,11 +457,11 @@ function ModeExplainer({ emoji, title, color, bullets, example, onContinue, onBa
       </div>
       {example && (
         <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(255,201,60,0.08)", border: `2px solid ${color}` }}>
-          <p className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color }}>💡 Exemple concret</p>
+          <p className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color }}>{tr("exampleLabel")}</p>
           <p className="text-sm opacity-90" style={{ lineHeight: 1.6 }}>{example}</p>
         </div>
       )}
-      <BigButton onClick={onContinue} color={color} icon={Play}>C'est parti !</BigButton>
+      <BigButton onClick={onContinue} color={color} icon={Play}>{tr("continueBtn")}</BigButton>
     </Stage>
   );
 }
@@ -802,9 +1171,10 @@ function Logo() {
   );
 }
 function ScreenHeader({ title, onBack, color = C.gold }) {
+  const { t: tr } = useLang();
   return (
     <div className="mb-6">
-      {onBack && (<div className="mb-3"><GhostButton onClick={onBack} small>← Retour</GhostButton></div>)}
+      {onBack && (<div className="mb-3"><GhostButton onClick={onBack} small>{tr("back")}</GhostButton></div>)}
       <h2 className="text-center" style={{ fontFamily: F.display, fontSize: 24, color }}>{title}</h2>
     </div>
   );
@@ -834,6 +1204,7 @@ function Chip({ children, active, onClick, disabled }) {
 }
 
 function CategoryPicker({ cats, setCats, kidsMode, setKidsMode }) {
+  const { lang, t: tr } = useLang();
   const options = kidsMode ? KIDS_CATEGORIES : CATEGORIES;
   const allSelected = options.length > 0 && options.every((c) => cats.includes(c.id));
   function toggleCat(id) { setCats((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id])); }
@@ -846,15 +1217,15 @@ function CategoryPicker({ cats, setCats, kidsMode, setKidsMode }) {
   return (
     <>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm opacity-70 font-bold">Catégories</p>
-        <GhostButton onClick={toggleAll} small>{allSelected ? "Tout décocher" : "Tout cocher"}</GhostButton>
+        <p className="text-sm opacity-70 font-bold">{tr("categoriesLabel")}</p>
+        <GhostButton onClick={toggleAll} small>{allSelected ? tr("uncheckAll") : tr("checkAll")}</GhostButton>
       </div>
       {setKidsMode && (
         <div className="mb-3">
-          <Chip active={kidsMode} onClick={toggleKids}>🎈 Mode Kids (fin primaire / collège)</Chip>
+          <Chip active={kidsMode} onClick={toggleKids}>{tr("kidsMode")}</Chip>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2 mb-6">{options.map((c) => (<Chip key={c.id} active={cats.includes(c.id)} onClick={() => toggleCat(c.id)}>{c.emoji} {c.label}</Chip>))}</div>
+      <div className="grid grid-cols-2 gap-2 mb-6">{options.map((c) => (<Chip key={c.id} active={cats.includes(c.id)} onClick={() => toggleCat(c.id)}>{c.emoji} {kidsMode ? kidsCategoryLabel(c, lang) : categoryLabel(c, lang)}</Chip>))}</div>
     </>
   );
 }
@@ -863,19 +1234,21 @@ function CategoryPicker({ cats, setCats, kidsMode, setKidsMode }) {
    HOME
 --------------------------------------------------------- */
 function Home({ onCreate, onJoin, onSolo, onMatchAmor, onBlindTest, onEnchere }) {
+  const { lang, t: tr, setLang } = useLang();
   return (
     <Stage>
       <Logo />
+      <LangSwitch lang={lang} setLang={setLang} />
       <p className="text-center opacity-80 mb-8" style={{ fontSize: 15 }}>
-        Culture générale, questions insolites, jokers vicieux. Un écran (TV ou téléphone casté) pour l'hôte, un téléphone par joueur.
+        {tr("appTagline")}
       </p>
       <div className="flex flex-col gap-4">
-        <BigButton onClick={onCreate} color={C.gold} icon={Crown}>Créer une partie (hôte)</BigButton>
-        <BigButton onClick={onJoin} color={C.teal} icon={Users}>Rejoindre une partie</BigButton>
-        <BigButton onClick={onBlindTest} color={C.violet}>🎧 Blind Test musical</BigButton>
-        <BigButton onClick={onEnchere} color={C.gold}>💰 Quitte ou Double</BigButton>
-        <BigButton onClick={onMatchAmor} color={C.pink} icon={Skull}>Match Amor 💔</BigButton>
-        <BigButton onClick={onSolo} color={C.mint} icon={Skull}>Jouer seul</BigButton>
+        <BigButton onClick={onCreate} color={C.gold} icon={Crown}>{tr("createGame")}</BigButton>
+        <BigButton onClick={onJoin} color={C.teal} icon={Users}>{tr("joinGame")}</BigButton>
+        <BigButton onClick={onBlindTest} color={C.violet}>{tr("blindTestBtn")}</BigButton>
+        <BigButton onClick={onEnchere} color={C.gold}>{tr("enchereBtn")}</BigButton>
+        <BigButton onClick={onMatchAmor} color={C.pink} icon={Skull}>{tr("matchAmorBtn")}</BigButton>
+        <BigButton onClick={onSolo} color={C.mint} icon={Skull}>{tr("soloBtn")}</BigButton>
       </div>
     </Stage>
   );
@@ -1118,6 +1491,7 @@ function AvatarPicker({ animal, onPick, taken }) {
    ADMIN: CREATE / SETTINGS
 --------------------------------------------------------- */
 function CreateRoom({ onCreated, onBack }) {
+  const { lang, t: tr } = useLang();
   const [cats, setCats] = useState(["animaux", "geo", "films"]);
   const [nbQuestions, setNbQuestions] = useState(10);
   const [types, setTypes] = useState({ qcm: true, vf: true, echelle: true });
@@ -1146,7 +1520,7 @@ function CreateRoom({ onCreated, onBack }) {
     let hostPid = null;
     if (hostPlays && hostAnimal) {
       hostPid = uid();
-      const pseudo = hostPseudo.trim() || "L'hôte";
+      const pseudo = hostPseudo.trim() || (lang === "en" ? "The host" : "L'hôte");
       await sSet(playerKey(code, hostPid), { id: hostPid, pseudo, animal: hostAnimal, team: 1, joinedAt: Date.now() });
       await sSet(scoreKey(code, hostPid), 0);
     }
@@ -1155,18 +1529,18 @@ function CreateRoom({ onCreated, onBack }) {
 
   return (
     <Stage wide>
-      <ScreenHeader title="Réglages de la partie" onBack={onBack} />
-      <p className="text-xs opacity-50 mb-4 text-center flex items-center justify-center gap-1"><Cast size={14} /> Sur téléphone : utilise l'affichage sans fil (AirPlay / Chromecast) pour caster cet écran sur la TV.</p>
+      <ScreenHeader title={tr("roomSettingsTitle")} onBack={onBack} />
+      <p className="text-xs opacity-50 mb-4 text-center flex items-center justify-center gap-1"><Cast size={14} /> {tr("castHint")}</p>
       <CategoryPicker cats={cats} setCats={setCats} kidsMode={kidsMode} setKidsMode={setKidsMode} />
-      <p className="text-sm opacity-70 mb-2 font-bold">Types de questions</p>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("questionTypesLabel")}</p>
       <div className="flex flex-wrap gap-2 mb-6">
-        <Chip active={types.qcm} onClick={() => toggleType("qcm")}>QCM</Chip>
-        <Chip active={types.vf} onClick={() => toggleType("vf")}>Vrai / Faux</Chip>
-        <Chip active={types.echelle} onClick={() => toggleType("echelle")}>Réponse chiffrée</Chip>
+        <Chip active={types.qcm} onClick={() => toggleType("qcm")}>{tr("qcmLabel")}</Chip>
+        <Chip active={types.vf} onClick={() => toggleType("vf")}>{tr("vfLabel")}</Chip>
+        <Chip active={types.echelle} onClick={() => toggleType("echelle")}>{tr("echelleLabel")}</Chip>
       </div>
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div>
-          <p className="text-sm opacity-70 mb-2 font-bold">Nombre de questions</p>
+          <p className="text-sm opacity-70 mb-2 font-bold">{tr("nbQuestionsLabel")}</p>
           <div className="flex items-center gap-3">
             <button onClick={() => setNbQuestions((n) => Math.max(5, n - 1))} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button>
             <span style={{ fontFamily: F.mono, fontSize: 22 }}>{nbQuestions}</span>
@@ -1174,7 +1548,7 @@ function CreateRoom({ onCreated, onBack }) {
           </div>
         </div>
         <div>
-          <p className="text-sm opacity-70 mb-2 font-bold">Secondes par question</p>
+          <p className="text-sm opacity-70 mb-2 font-bold">{tr("secondsPerQuestionLabel")}</p>
           <div className="flex items-center gap-3">
             <button onClick={() => setSeconds((n) => Math.max(5, n - 5))} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button>
             <span style={{ fontFamily: F.mono, fontSize: 22 }}>{seconds}s</span>
@@ -1182,43 +1556,43 @@ function CreateRoom({ onCreated, onBack }) {
           </div>
         </div>
       </div>
-      <p className="text-sm opacity-70 mb-2 font-bold">Mode équipes (composées par toi, l'hôte, dans le salon)</p>
-      <div className="flex gap-2 mb-6">{[1, 2, 3, 4].map((n) => (<Chip key={n} active={teamsMode === n} onClick={() => setTeamsMode(n)}>{n === 1 ? "Chacun pour soi" : `${n} équipes`}</Chip>))}</div>
-      <p className="text-sm opacity-70 mb-2 font-bold">Jokers activés (1 fois par partie chacun, 1 joker max par question)</p>
-      <div className="flex flex-wrap gap-2 mb-6">{JOKERS.map((j) => (<Chip key={j.id} active={jokers[j.id]} onClick={() => toggleJoker(j.id)}>{j.label}</Chip>))}</div>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("teamsModeLabel")}</p>
+      <div className="flex gap-2 mb-6">{[1, 2, 3, 4].map((n) => (<Chip key={n} active={teamsMode === n} onClick={() => setTeamsMode(n)}>{n === 1 ? tr("soloForAll") : `${n} ${tr("teamsCount")}`}</Chip>))}</div>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("jokersEnabledLabel")}</p>
+      <div className="flex flex-wrap gap-2 mb-6">{JOKERS.map((j) => (<Chip key={j.id} active={jokers[j.id]} onClick={() => toggleJoker(j.id)}>{jokerLabel(j, lang)}</Chip>))}</div>
 
-      <p className="text-sm opacity-70 mb-2 font-bold">Attribution des jokers</p>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("jokerAttribLabel")}</p>
       <div className="flex flex-wrap gap-2 mb-3">
-        <Chip active={!jokerRandom} onClick={() => setJokerRandom(false)}>Les joueurs choisissent eux-mêmes</Chip>
-        <Chip active={jokerRandom} onClick={() => setJokerRandom(true)}>Attribution aléatoire 🎴</Chip>
+        <Chip active={!jokerRandom} onClick={() => setJokerRandom(false)}>{tr("jokerManual")}</Chip>
+        <Chip active={jokerRandom} onClick={() => setJokerRandom(true)}>{tr("jokerRandomLabel")}</Chip>
       </div>
-      <p className="text-xs opacity-50 mb-3">{jokerRandom ? "L'ordinateur tire au sort les jokers de chaque joueur." : "Chaque joueur choisira lui-même ses jokers parmi ceux activés ci-dessus (un seul de chaque type)."}</p>
+      <p className="text-xs opacity-50 mb-3">{jokerRandom ? tr("jokerRandomHint") : tr("jokerManualHint")}</p>
       <div className="flex items-center gap-3 mb-6">
-        <span className="text-sm opacity-70">Jokers par joueur :</span>
+        <span className="text-sm opacity-70">{tr("jokersPerPlayerLabel")}</span>
         <button onClick={() => setJokerRandomCount((n) => Math.max(1, n - 1))} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button>
         <span style={{ fontFamily: F.mono, fontSize: 20 }}>{jokerRandomCount}</span>
         <button onClick={() => setJokerRandomCount((n) => Math.min(JOKERS.length, n + 1))} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Plus size={16} /></button>
       </div>
 
-      <p className="text-sm opacity-70 mb-2 font-bold">Malus en cas de mauvaise réponse (bonus max toujours 100 pts)</p>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("malusLabel")}</p>
       <div className="flex flex-wrap gap-2 mb-6">
-        {[0, -25, -50, -100].map((m) => (<Chip key={m} active={malus === m} onClick={() => setMalus(m)}>{m === 0 ? "Aucun" : `${m} pts`}</Chip>))}
+        {[0, -25, -50, -100].map((m) => (<Chip key={m} active={malus === m} onClick={() => setMalus(m)}>{m === 0 ? tr("malusNone") : `${m} pts`}</Chip>))}
       </div>
 
-      <p className="text-sm opacity-70 mb-2 font-bold">L'hôte joue aussi ?</p>
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("hostPlaysLabel")}</p>
       <div className="flex flex-wrap gap-2 mb-3">
-        <Chip active={!hostPlays} onClick={() => setHostPlays(false)}>Non, juste animateur</Chip>
-        <Chip active={hostPlays} onClick={() => setHostPlays(true)}>Oui, je participe aussi</Chip>
+        <Chip active={!hostPlays} onClick={() => setHostPlays(false)}>{tr("hostPlaysNo")}</Chip>
+        <Chip active={hostPlays} onClick={() => setHostPlays(true)}>{tr("hostPlaysYes")}</Chip>
       </div>
       {hostPlays && (
         <div className="mb-4 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)" }}>
-          <p className="text-xs opacity-60 mb-2">⚠️ Sans jokers pour toi, pour garder le jeu simple depuis l'écran d'hôte.</p>
-          <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder="Ton pseudo (optionnel)" className="w-full mb-3 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
+          <p className="text-xs opacity-60 mb-2">{tr("hostPlaysWarning")}</p>
+          <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder={tr("hostPseudoPlaceholder")} className="w-full mb-3 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
           <AvatarPicker animal={hostAnimal} onPick={setHostAnimal} taken={[]} />
         </div>
       )}
 
-      <BigButton onClick={create} color={C.pink} icon={Play} disabled={hostPlays && !hostAnimal}>Créer la salle</BigButton>
+      <BigButton onClick={create} color={C.pink} icon={Play} disabled={hostPlays && !hostAnimal}>{tr("createRoomBtn")}</BigButton>
     </Stage>
   );
 }
@@ -1227,6 +1601,7 @@ function CreateRoom({ onCreated, onBack }) {
    PLAYER JOIN
 --------------------------------------------------------- */
 function JoinRoom({ onJoined, onBack, initialCode }) {
+  const { t: tr } = useLang();
   const [step, setStep] = useState("code");
   const [code, setCode] = useState(initialCode || "");
   const [room, setRoom] = useState(null);
@@ -1240,10 +1615,10 @@ function JoinRoom({ onJoined, onBack, initialCode }) {
   async function validateCode(codeOverride) {
     setError("");
     const c = (typeof codeOverride === "string" ? codeOverride : code).trim().toUpperCase();
-    if (c.length !== 4) return setError("Le code fait 4 lettres.");
+    if (c.length !== 4) return setError(tr("errCodeLength"));
     setLoading(true);
     const r = await sGet(roomKey(c));
-    if (!r) { setLoading(false); return setError("Salle introuvable, vérifie le code."); }
+    if (!r) { setLoading(false); return setError(tr("errRoomNotFound")); }
     const pKeys = await sList(`qz:${c}:player:`);
     const list = (await Promise.all(pKeys.map((k) => sGet(k)))).filter(Boolean);
     setPlayers(list);
@@ -1263,7 +1638,7 @@ function JoinRoom({ onJoined, onBack, initialCode }) {
 
   async function continueFromPseudo() {
     const trimmed = pseudo.trim();
-    if (!trimmed) return setError("Choisis un pseudo.");
+    if (!trimmed) return setError(tr("errChoosePseudo"));
     setError("");
     const existing = players.find((p) => p.pseudo.trim().toLowerCase() === trimmed.toLowerCase());
     if (existing) {
@@ -1280,7 +1655,7 @@ function JoinRoom({ onJoined, onBack, initialCode }) {
   }
 
   async function join() {
-    if (!animal) return setError("Choisis un animal.");
+    if (!animal) return setError(tr("errChooseAnimal"));
     setError(""); setLoading(true);
     const pid = uid();
     const trimmed = pseudo.trim();
@@ -1292,67 +1667,68 @@ function JoinRoom({ onJoined, onBack, initialCode }) {
 
   if (step === "code") return (
     <Stage>
-      <ScreenHeader title="Rejoindre" onBack={onBack} color={C.teal} />
-      <p className="text-sm opacity-70 mb-2 font-bold">Code de la salle</p>
-      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))} placeholder="EX: FUNK" className="w-full mb-4 rounded-xl px-4 py-3 text-center tracking-[0.3em]" style={{ fontFamily: F.mono, fontSize: 22, background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid ${C.violet}` }} />
+      <ScreenHeader title={tr("joinTitle")} onBack={onBack} color={C.teal} />
+      <p className="text-sm opacity-70 mb-2 font-bold">{tr("roomCodeLabel")}</p>
+      <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 4))} placeholder={tr("roomCodePlaceholder")} className="w-full mb-4 rounded-xl px-4 py-3 text-center tracking-[0.3em]" style={{ fontFamily: F.mono, fontSize: 22, background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid ${C.violet}` }} />
       {error && <p className="text-sm mb-3" style={{ color: C.pink }}>{error}</p>}
-      <BigButton onClick={() => validateCode()} color={C.teal} disabled={loading}>{loading ? "..." : "Continuer"}</BigButton>
+      <BigButton onClick={() => validateCode()} color={C.teal} disabled={loading}>{loading ? tr("loadingDots") : tr("continueSimple")}</BigButton>
     </Stage>
   );
 
   if (step === "pseudo") return (
     <Stage>
-      <ScreenHeader title="Ton pseudo" onBack={() => setStep("code")} color={C.teal} />
+      <ScreenHeader title={tr("yourPseudoTitle")} onBack={() => setStep("code")} color={C.teal} />
       <div className="flex gap-2 mb-2">
-        <input value={pseudo} onChange={(e) => setPseudo(e.target.value)} placeholder="Écris ton pseudo..." className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid rgba(255,255,255,0.15)` }} />
+        <input value={pseudo} onChange={(e) => setPseudo(e.target.value)} placeholder={tr("pseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid rgba(255,255,255,0.15)` }} />
         <button onClick={() => setPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
       </div>
-      <p className="text-xs opacity-60 mb-4">✨ le bouton génère un pseudo fun si tu manques d'inspiration. Si tu retapes exactement le même pseudo qu'avant dans cette salle, tu retrouves ta place et tes points.</p>
+      <p className="text-xs opacity-60 mb-4">{tr("pseudoHint")}</p>
       {error && <p className="text-sm mb-3" style={{ color: C.pink }}>{error}</p>}
-      <BigButton onClick={continueFromPseudo} color={C.teal} disabled={loading}>{loading ? "..." : "Continuer"}</BigButton>
+      <BigButton onClick={continueFromPseudo} color={C.teal} disabled={loading}>{loading ? tr("loadingDots") : tr("continueSimple")}</BigButton>
     </Stage>
   );
 
   return (
     <Stage>
-      <ScreenHeader title="Ton avatar" onBack={() => setStep("pseudo")} color={C.teal} />
+      <ScreenHeader title={tr("yourAvatarTitle")} onBack={() => setStep("pseudo")} color={C.teal} />
       <AvatarPicker animal={animal} onPick={setAnimal} taken={players.map((p) => p.animal)} />
       {error && <p className="text-sm mb-3 text-center" style={{ color: C.pink }}>{error}</p>}
-      <BigButton onClick={join} color={C.teal} disabled={loading}>{loading ? "..." : "Rejoindre la partie"}</BigButton>
+      <BigButton onClick={join} color={C.teal} disabled={loading}>{loading ? tr("loadingDots") : tr("joinPartyBtn")}</BigButton>
     </Stage>
   );
 }
 
 function JokerTuto({ room, onDone }) {
+  const { lang, t: tr } = useLang();
   const enabled = JOKERS.filter((j) => room?.settings?.jokers?.[j.id]);
   const isRandom = room?.settings?.jokerRandom;
+  const n = room.settings.jokerRandomCount || 2;
   return (
     <Stage>
       <div className="text-center mb-2" style={{ fontSize: 40 }}>🎪</div>
-      <h2 className="text-center mb-3" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}>La boîte à jokers</h2>
+      <h2 className="text-center mb-3" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}>{tr("jokerBoxTitle")}</h2>
       <p className="text-sm opacity-70 mb-5 text-center">
-        {isRandom
-          ? `Tirage au sort ce soir : tu repartiras avec ${room.settings.jokerRandomCount || 2} joker(s) parmi la liste ci-dessous. Un seul joker par question !`
-          : `Sur l'écran suivant, choisis toi-même ${room.settings.jokerRandomCount || 2} joker(s) parmi la liste ci-dessous. Un seul joker par question !`}
+        {(isRandom ? tr("jokerTutoRandom") : tr("jokerTutoManual")).replace("{n}", n)}
       </p>
       <div className="flex flex-col gap-3 mb-6">
         {enabled.map((j) => (
           <div key={j.id} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)" }}>
             <div className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 46, height: 46, background: "rgba(255,255,255,0.1)", fontSize: 22 }}>{j.emoji}</div>
             <div>
-              <p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{j.label}</p>
-              <p className="text-xs opacity-80">{j.desc}</p>
+              <p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{jokerLabel(j, lang)}</p>
+              <p className="text-xs opacity-80">{jokerDesc(j, lang)}</p>
             </div>
           </div>
         ))}
-        {enabled.length === 0 && <p className="text-sm opacity-60 text-center">Aucun joker activé pour cette partie.</p>}
+        {enabled.length === 0 && <p className="text-sm opacity-60 text-center">{tr("noJokerThisGame")}</p>}
       </div>
-      <BigButton onClick={onDone} color={C.gold}>C'est parti !</BigButton>
+      <BigButton onClick={onDone} color={C.gold}>{tr("continueBtn")}</BigButton>
     </Stage>
   );
 }
 
 function JokerDraw({ room, code, pid, onDone }) {
+  const { lang, t: tr } = useLang();
   const enabledIds = Object.entries(room.settings.jokers || {}).filter(([, v]) => v).map(([k]) => k);
   const jokerDefs = JOKERS.filter((j) => enabledIds.includes(j.id));
   const [deck] = useState(() => {
@@ -1372,49 +1748,50 @@ function JokerDraw({ room, code, pid, onDone }) {
     return (
       <Stage>
         <div className="text-center mb-2" style={{ fontSize: 44 }}>🎉</div>
-        <h2 className="text-center mb-4" style={{ fontFamily: F.display, fontSize: 24, color: C.gold }}>Tes jokers pour la partie</h2>
+        <h2 className="text-center mb-4" style={{ fontFamily: F.display, fontSize: 24, color: C.gold }}>{tr("yourJokersTitle")}</h2>
         <div className="flex flex-col gap-3 mb-6">
           {picked.map((id) => { const j = JOKERS.find((x) => x.id === id); return (
             <div key={id} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)" }}>
               <div className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 46, height: 46, background: "rgba(255,255,255,0.1)", fontSize: 22 }}>{j.emoji}</div>
-              <div><p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{j.label}</p><p className="text-xs opacity-80">{j.desc}</p></div>
+              <div><p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{jokerLabel(j, lang)}</p><p className="text-xs opacity-80">{jokerDesc(j, lang)}</p></div>
             </div>
           ); })}
         </div>
-        <BigButton onClick={() => onDone(picked)} color={C.gold}>Rejoindre la salle</BigButton>
+        <BigButton onClick={() => onDone(picked)} color={C.gold}>{tr("joinRoomBtn")}</BigButton>
       </Stage>
     );
   }
 
   return (
     <Stage>
-      <ScreenHeader title="Tire tes jokers 🎴" color={C.gold} />
-      <p className="text-sm opacity-70 mb-4 text-center">Choisis {count} carte{count > 1 ? "s" : ""} parmi {deck.length}. Le mélange est propre à toi seul, personne ne peut tricher.</p>
+      <ScreenHeader title={tr("drawJokersTitle")} color={C.gold} />
+      <p className="text-sm opacity-70 mb-4 text-center">{tr("drawChooseCards").replace("{n}", count).replace("{total}", deck.length)}</p>
       <div className="grid grid-cols-3 gap-3 mb-6">
         {deck.map((j, i) => {
           const isFlipped = flipped.includes(i);
           const Icon = j.icon;
           return (
             <button key={i} onClick={() => flip(i)} disabled={isFlipped || flipped.length >= count} className="rounded-2xl aspect-square flex flex-col items-center justify-center gap-1 transition-transform active:scale-95" style={isFlipped ? { background: C.gold, border: `2px solid ${C.gold}`, boxShadow: `0 4px 0 rgba(0,0,0,0.25)` } : { background: `linear-gradient(135deg, ${j.backColor}, ${j.backColor}99)`, border: "2px solid rgba(255,255,255,0.25)", boxShadow: `0 4px 0 rgba(0,0,0,0.2)` }}>
-              {isFlipped ? (<><Icon size={28} color="#1B1030" /><span style={{ fontFamily: F.display, fontSize: 13, color: "#1B1030", textAlign: "center", lineHeight: 1.15, padding: "0 2px" }}>{j.label}</span></>) : (<span style={{ fontSize: 28 }}>🃏</span>)}
+              {isFlipped ? (<><Icon size={28} color="#1B1030" /><span style={{ fontFamily: F.display, fontSize: 13, color: "#1B1030", textAlign: "center", lineHeight: 1.15, padding: "0 2px" }}>{jokerLabel(j, lang)}</span></>) : (<span style={{ fontSize: 28 }}>🃏</span>)}
             </button>
           );
         })}
       </div>
       {picked.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs opacity-70 mb-2 text-center">Déjà révélé{picked.length > 1 ? "s" : ""} :</p>
+          <p className="text-xs opacity-70 mb-2 text-center">{tr("alreadyRevealed")}</p>
           <div className="flex gap-2 justify-center flex-wrap">
-            {picked.map((id) => { const j = JOKERS.find((x) => x.id === id); return <span key={id} className="text-xs rounded-full px-3 py-1 flex items-center gap-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {j.label}</span>; })}
+            {picked.map((id) => { const j = JOKERS.find((x) => x.id === id); return <span key={id} className="text-xs rounded-full px-3 py-1 flex items-center gap-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {jokerLabel(j, lang)}</span>; })}
           </div>
         </div>
       )}
-      <BigButton onClick={confirm} color={C.gold} disabled={flipped.length < count}>Valider mes jokers</BigButton>
+      <BigButton onClick={confirm} color={C.gold} disabled={flipped.length < count}>{tr("validateMyJokers")}</BigButton>
     </Stage>
   );
 }
 
 function JokerPick({ room, code, pid, onDone }) {
+  const { lang, t: tr } = useLang();
   const enabledIds = Object.entries(room.settings.jokers || {}).filter(([, v]) => v).map(([k]) => k);
   const jokerDefs = JOKERS.filter((j) => enabledIds.includes(j.id));
   const [picked, setPicked] = useState([]);
@@ -1434,24 +1811,24 @@ function JokerPick({ room, code, pid, onDone }) {
     return (
       <Stage>
         <div className="text-center mb-2" style={{ fontSize: 44 }}>🎉</div>
-        <h2 className="text-center mb-4" style={{ fontFamily: F.display, fontSize: 24, color: C.gold }}>Tes jokers pour la partie</h2>
+        <h2 className="text-center mb-4" style={{ fontFamily: F.display, fontSize: 24, color: C.gold }}>{tr("yourJokersTitle")}</h2>
         <div className="flex flex-col gap-3 mb-6">
           {picked.map((id) => { const j = JOKERS.find((x) => x.id === id); return (
             <div key={id} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)" }}>
               <div className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 46, height: 46, background: "rgba(255,255,255,0.1)", fontSize: 22 }}>{j.emoji}</div>
-              <div><p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{j.label}</p><p className="text-xs opacity-80">{j.desc}</p></div>
+              <div><p style={{ fontFamily: F.display, fontSize: 17, color: C.gold }}>{jokerLabel(j, lang)}</p><p className="text-xs opacity-80">{jokerDesc(j, lang)}</p></div>
             </div>
           ); })}
         </div>
-        <BigButton onClick={() => onDone(picked)} color={C.gold}>Rejoindre la salle</BigButton>
+        <BigButton onClick={() => onDone(picked)} color={C.gold}>{tr("joinRoomBtn")}</BigButton>
       </Stage>
     );
   }
 
   return (
     <Stage>
-      <ScreenHeader title="Choisis tes jokers 🎯" color={C.gold} />
-      <p className="text-sm opacity-70 mb-4 text-center">Sélectionne {count} joker{count > 1 ? "s" : ""} parmi {jokerDefs.length} — un seul de chaque type. Ce sera les tiens pour toute la partie.</p>
+      <ScreenHeader title={tr("pickJokersTitle")} color={C.gold} />
+      <p className="text-sm opacity-70 mb-4 text-center">{tr("pickChooseJokers").replace("{n}", count).replace("{total}", jokerDefs.length)}</p>
       <div className="flex flex-col gap-3 mb-6">
         {jokerDefs.map((j) => {
           const isPicked = picked.includes(j.id);
@@ -1462,16 +1839,16 @@ function JokerPick({ room, code, pid, onDone }) {
                 <Icon size={22} color={isPicked ? "#1B1030" : C.cream} />
               </div>
               <div className="flex-1">
-                <p style={{ fontFamily: F.display, fontSize: 17, color: isPicked ? C.gold : C.cream }}>{j.label}</p>
-                <p className="text-xs opacity-80">{j.desc}</p>
+                <p style={{ fontFamily: F.display, fontSize: 17, color: isPicked ? C.gold : C.cream }}>{jokerLabel(j, lang)}</p>
+                <p className="text-xs opacity-80">{jokerDesc(j, lang)}</p>
               </div>
               {isPicked && <Check size={20} color={C.gold} />}
             </button>
           );
         })}
       </div>
-      <p className="text-xs opacity-60 mb-4 text-center">{picked.length} / {count} sélectionné{picked.length > 1 ? "s" : ""}</p>
-      <BigButton onClick={confirm} color={C.gold} disabled={picked.length < count}>Valider mes jokers</BigButton>
+      <p className="text-xs opacity-60 mb-4 text-center">{picked.length} / {count} {tr("selectedCount")}</p>
+      <BigButton onClick={confirm} color={C.gold} disabled={picked.length < count}>{tr("validateMyJokers")}</BigButton>
     </Stage>
   );
 }
@@ -1480,6 +1857,7 @@ function JokerPick({ room, code, pid, onDone }) {
    LOBBIES
 --------------------------------------------------------- */
 function AdminLobby({ code, room, onStart, buildExtraOnStart, onBack }) {
+  const { lang, t: tr } = useLang();
   const [players, setPlayers] = useState([]);
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -1510,43 +1888,43 @@ function AdminLobby({ code, room, onStart, buildExtraOnStart, onBack }) {
   const teamColors = [C.pink, C.teal, C.gold, C.violet];
   return (
     <Stage wide>
-      {onBack && <div className="mb-3"><GhostButton onClick={onBack} small>← Retour</GhostButton></div>}
+      {onBack && <div className="mb-3"><GhostButton onClick={onBack} small>{tr("back")}</GhostButton></div>}
       <Logo />
       <div className="text-center mb-6">
-        <p className="text-sm opacity-70 mb-1">Rejoignez avec le code</p>
+        <p className="text-sm opacity-70 mb-1">{tr("joinWithCode")}</p>
         <div className="flex items-center justify-center gap-3">
           <span style={{ fontFamily: F.mono, fontSize: 48, letterSpacing: 10, color: C.gold }}>{code}</span>
           <button onClick={() => { navigator.clipboard?.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="rounded-lg p-2" style={{ background: "rgba(255,255,255,0.1)" }}>{copied ? <Check size={18} /> : <Copy size={18} />}</button>
         </div>
-        <p className="text-xs opacity-50 mt-2 flex items-center justify-center gap-1"><Cast size={12} /> Sur téléphone : caste cet écran via AirPlay / Chromecast pour l'afficher sur la TV</p>
+        <p className="text-xs opacity-50 mt-2 flex items-center justify-center gap-1"><Cast size={12} /> {tr("castRoomHint")}</p>
         <div className="flex flex-col items-center mt-4">
           <GhostButton onClick={() => { navigator.clipboard?.writeText(buildJoinUrl(code)); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1500); }}>
-            {linkCopied ? "Lien copié ✓" : "📋 Copier le lien de la partie"}
+            {linkCopied ? tr("linkCopiedMsg") : tr("copyLinkBtn")}
           </GhostButton>
-          <p className="text-[11px] opacity-50 mt-2 max-w-xs text-center">À coller dans un SMS/WhatsApp — ouvre l'appli avec le code déjà rempli</p>
+          <p className="text-[11px] opacity-50 mt-2 max-w-xs text-center">{tr("pasteLinkHint")}</p>
         </div>
         <div className="flex flex-col items-center mt-4">
           <div className="rounded-2xl p-2" style={{ background: C.cream }}>
-            <img src={qrCodeSrc(buildJoinUrl(code))} alt="QR code pour rejoindre la partie" width={140} height={140} style={{ display: "block" }} />
+            <img src={qrCodeSrc(buildJoinUrl(code))} alt="QR code" width={140} height={140} style={{ display: "block" }} />
           </div>
-          <p className="text-[11px] opacity-50 mt-2">📷 Ou scanne pour rejoindre directement</p>
+          <p className="text-[11px] opacity-50 mt-2">{tr("scanHint")}</p>
         </div>
       </div>
       <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(255,255,255,0.05)", minHeight: 140 }}>
-        <p className="text-sm font-bold mb-3 opacity-70 flex items-center gap-2"><Users size={16} /> Joueurs ({players.length}){room.settings.teamsMode > 1 && " — clique un joueur pour changer son équipe"}</p>
+        <p className="text-sm font-bold mb-3 opacity-70 flex items-center gap-2"><Users size={16} /> {tr("playersInRoom")} ({players.length}){room.settings.teamsMode > 1 && tr("clickToChangeTeam")}</p>
         <div className="flex flex-wrap gap-3">
-          {players.length === 0 && <p className="text-sm opacity-50">En attente de joueurs...</p>}
+          {players.length === 0 && <p className="text-sm opacity-50">{tr("waitingPlayersLobby")}</p>}
           {players.map((p) => (
             <button key={p.id} onClick={() => room.settings.teamsMode > 1 && setTeam(p.id, p.team)} className="flex flex-col items-center gap-1" style={{ width: 84 }}>
               <div className="flex items-center justify-center rounded-full" style={{ width: 52, height: 52, background: "rgba(255,255,255,0.08)", fontSize: 26, border: room.settings.teamsMode > 1 ? `3px solid ${teamColors[(p.team - 1) % 4]}` : "none" }}>{p.animal}</div>
               <span className="text-xs text-center truncate w-full">{p.pseudo}</span>
-              {room.settings.teamsMode > 1 && <span className="text-[10px] opacity-70">Équipe {p.team}</span>}
+              {room.settings.teamsMode > 1 && <span className="text-[10px] opacity-70">{tr("teamWord")} {p.team}</span>}
               {room.settings.jokers && (
                 <div className="flex gap-0.5 flex-wrap justify-center">
                   {p.drawnJokers === undefined ? null : p.drawnJokers === null ? (
-                    <span className="text-[9px] opacity-50">en cours...</span>
+                    <span className="text-[9px] opacity-50">...</span>
                   ) : (
-                    p.drawnJokers.map((jid) => { const j = JOKERS.find((x) => x.id === jid); return <span key={jid} title={j?.label} style={{ fontSize: 13 }}>{j?.emoji}</span>; })
+                    p.drawnJokers.map((jid) => { const j = JOKERS.find((x) => x.id === jid); return <span key={jid} title={jokerLabel(j, lang)} style={{ fontSize: 13 }}>{j?.emoji}</span>; })
                   )}
                 </div>
               )}
@@ -1554,12 +1932,13 @@ function AdminLobby({ code, room, onStart, buildExtraOnStart, onBack }) {
           ))}
         </div>
       </div>
-      <BigButton onClick={start} color={C.pink} disabled={players.length === 0} icon={Play}>Lancer la partie ({(room.questions || room.tracks || []).length} {room.mode === "blindtest" ? "morceaux" : "questions"})</BigButton>
+      <BigButton onClick={start} color={C.pink} disabled={players.length === 0} icon={Play}>{tr("launchGame")} ({(room.questions || room.tracks || []).length} {room.mode === "blindtest" ? tr("tracksWord") : tr("questionsWord")})</BigButton>
     </Stage>
   );
 }
 
 function PlayerLobby({ profile, code, assignedJokers }) {
+  const { lang, t: tr } = useLang();
   const [players, setPlayers] = useState([]);
   useEffect(() => {
     let stop = false;
@@ -1579,10 +1958,10 @@ function PlayerLobby({ profile, code, assignedJokers }) {
       <div className="flex flex-col items-center gap-3 mt-6">
         <div className="flex items-center justify-center rounded-full" style={{ width: 88, height: 88, background: "rgba(255,255,255,0.08)", border: `3px solid ${C.teal}`, fontSize: 42 }}>{profile.animal}</div>
         <p style={{ fontFamily: F.display, fontSize: 22 }}>{profile.pseudo}</p>
-        <p className="text-sm opacity-60">Salle {code}</p>
-        <p className="mt-2 text-center opacity-70">En attente que l'hôte lance la partie... 🎬</p>
+        <p className="text-sm opacity-60">{tr("roomWord")} {code}</p>
+        <p className="mt-2 text-center opacity-70">{tr("waitingForHost")}</p>
         <div className="mt-4 rounded-2xl p-4 w-full" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <p className="text-sm font-bold mb-3 opacity-70 flex items-center gap-2"><Users size={16} /> Joueurs dans la salle ({players.length})</p>
+          <p className="text-sm font-bold mb-3 opacity-70 flex items-center gap-2"><Users size={16} /> {tr("playersInRoom")} ({players.length})</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {players.map((p) => (
               <div key={p.id} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
@@ -1590,17 +1969,17 @@ function PlayerLobby({ profile, code, assignedJokers }) {
                 <span className="text-xs text-center truncate w-full">{p.pseudo}</span>
               </div>
             ))}
-            {players.length === 0 && <p className="text-xs opacity-50">Chargement...</p>}
+            {players.length === 0 && <p className="text-xs opacity-50">{tr("loadingSimple")}</p>}
           </div>
         </div>
         <div className="mt-2 rounded-xl p-3 text-center w-full" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <p className="text-xs opacity-60 mb-1">Tes jokers pour cette partie :</p>
+          <p className="text-xs opacity-60 mb-1">{tr("yourJokersColon")}</p>
           {assignedJokers && assignedJokers.length > 0 ? (
             <div className="flex gap-2 justify-center flex-wrap">
-              {assignedJokers.map((id) => { const j = JOKERS.find((x) => x.id === id); return j ? <span key={id} className="text-xs rounded-full px-3 py-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {j.label}</span> : null; })}
+              {assignedJokers.map((id) => { const j = JOKERS.find((x) => x.id === id); return j ? <span key={id} className="text-xs rounded-full px-3 py-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {jokerLabel(j, lang)}</span> : null; })}
             </div>
           ) : (
-            <p className="text-xs opacity-50">Aucun joker pour cette partie.</p>
+            <p className="text-xs opacity-50">{tr("noJokerForGame")}</p>
           )}
         </div>
       </div>
@@ -1626,7 +2005,8 @@ function useCountdown(startedAt, seconds) {
 /* ---------------------------------------------------------
    ADMIN GAME
 --------------------------------------------------------- */
-function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
+function AdminGame({ code, room, onRoomChange, onFinished, hostPid, hostAssignedJokers, hostUsedJokersEver, setHostUsedJokersEver }) {
+  const { lang, t: tr } = useLang();
   const q = room.questions[room.currentIndex];
   const left = useCountdown(room.questionStartedAt, room.settings.seconds);
   const [answersCount, setAnswersCount] = useState(0);
@@ -1636,6 +2016,12 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
   const [autoLeft, setAutoLeft] = useState(7);
   const [hostScaleVal, setHostScaleVal] = useState(0);
   const [hostSubmitted, setHostSubmitted] = useState(false);
+  const [hostJokerUsed, setHostJokerUsed] = useState(null);
+  const [hostHiddenOptions, setHostHiddenOptions] = useState([]);
+  const [hostPickingTargetFor, setHostPickingTargetFor] = useState(null);
+  const [hostOtherPlayers, setHostOtherPlayers] = useState([]);
+  const [hostCopyPeek, setHostCopyPeek] = useState(null);
+  const [hostPollData, setHostPollData] = useState(null);
   const advancingRef = useRef(false);
 
   const collectAndScore = useCallback(async () => {
@@ -1720,7 +2106,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
   }, [code, q, room]);
 
   useEffect(() => {
-    setRevealed(false); advancingRef.current = false; setPlayerAnswers([]); setProvisional([]); setHostSubmitted(false); setHostScaleVal(0);
+    setRevealed(false); advancingRef.current = false; setPlayerAnswers([]); setProvisional([]); setHostSubmitted(false); setHostScaleVal(0); setHostJokerUsed(null); setHostHiddenOptions([]); setHostPickingTargetFor(null); setHostCopyPeek(null); setHostPollData(null);
     const t = setInterval(async () => {
       const [keys, playerKeys] = await Promise.all([sList(`qz:${code}:answer:${room.currentIndex}:`), sList(`qz:${code}:player:`)]);
       setAnswersCount(keys.length);
@@ -1752,40 +2138,144 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
     return "?";
   }
 
+  async function hostPickTarget(jokerId) {
+    const keys = await sList(`qz:${code}:player:`);
+    setHostOtherPlayers((await Promise.all(keys.map((k) => sGet(k)))).filter((p) => p && p.id !== hostPid));
+    setHostPickingTargetFor(jokerId);
+  }
+  async function hostConfirmTarget(targetId) {
+    const jokerId = hostPickingTargetFor;
+    const targetPlayer = hostOtherPlayers.find((p) => p.id === targetId);
+    setHostJokerUsed({ id: jokerId, targetId, targetPseudo: targetPlayer?.pseudo });
+    const nextUsed = [...hostUsedJokersEver, jokerId];
+    setHostUsedJokersEver(nextUsed);
+    sSet(`qz:${code}:jokerused:${hostPid}`, nextUsed);
+    setHostPickingTargetFor(null);
+    if (jokerId !== "copieur") await sSet(targetedKey(code, room.currentIndex, targetId, hostPid), true);
+    if (jokerId === "speedchrono") {
+      const elapsed = (Date.now() - room.questionStartedAt) / 1000;
+      const remaining = Math.max(0, room.settings.seconds - elapsed);
+      await sSet(speedChronoKey(code, room.currentIndex, targetId), { deadline: Date.now() + (remaining * 1000) / 2 });
+    }
+  }
+  function hostUseJoker(id) {
+    if (hostJokerUsed || hostSubmitted) return;
+    const jokerDef = JOKERS.find((j) => j.id === id);
+    if (jokerDef.targeted) { hostPickTarget(id); return; }
+    setHostJokerUsed({ id });
+    const nextUsed = [...hostUsedJokersEver, id];
+    setHostUsedJokersEver(nextUsed);
+    sSet(`qz:${code}:jokerused:${hostPid}`, nextUsed);
+    if (id === "5050" && q.type === "qcm") { const wrongIdx = q.options.map((_, i) => i).filter((i) => i !== q.answer); setHostHiddenOptions(wrongIdx.sort(() => Math.random() - 0.5).slice(0, 2)); }
+    if (id === "bouclier") sSet(shieldKey(code, room.currentIndex, hostPid), true);
+    if (id === "voleurtemps") {
+      (async () => {
+        const keys = await sList(`qz:${code}:player:`);
+        const others = (await Promise.all(keys.map((k) => sGet(k)))).filter((p) => p && p.id !== hostPid);
+        const elapsed = (Date.now() - room.questionStartedAt) / 1000;
+        const remaining = Math.max(0, room.settings.seconds - elapsed);
+        for (const o of others) {
+          await sSet(speedChronoKey(code, room.currentIndex, o.id), { deadline: Date.now() + Math.max(0, remaining - 3) * 1000 });
+        }
+      })();
+    }
+  }
+
+  useEffect(() => {
+    if (hostJokerUsed?.id !== "copieur" || hostSubmitted || hostCopyPeek !== null) return;
+    let stop = false;
+    const t = setInterval(async () => {
+      const a = await sGet(answerKey(code, room.currentIndex, hostJokerUsed.targetId));
+      if (stop || !a) return;
+      clearInterval(t);
+      setHostCopyPeek(a.value);
+    }, 700);
+    return () => { stop = true; clearInterval(t); };
+  }, [hostJokerUsed, hostSubmitted, hostCopyPeek, code, room.currentIndex]);
+
+  useEffect(() => {
+    if (hostJokerUsed?.id !== "sondage" || q.type !== "qcm" || hostSubmitted) return;
+    let stop = false;
+    const t = setInterval(async () => {
+      const keys = await sList(`qz:${code}:answer:${room.currentIndex}:`);
+      const answers = (await Promise.all(keys.map((k) => sGet(k)))).filter(Boolean);
+      if (stop) return;
+      const counts = q.options.map((_, i) => answers.filter((a) => a.value === i).length);
+      setHostPollData({ counts, total: answers.length });
+    }, 800);
+    return () => { stop = true; clearInterval(t); };
+  }, [hostJokerUsed, q, hostSubmitted, code, room.currentIndex]);
+
+  const hostEnabledJokers = hostPid ? JOKERS.filter((j) => (hostAssignedJokers || []).includes(j.id) && !hostUsedJokersEver.includes(j.id) && (j.id !== "5050" || q.type === "qcm") && (j.id !== "sondage" || q.type === "qcm")) : [];
+
   const cat = findCategory(q.category);
+  const catLabelText = cat ? (cat.id.startsWith("k_") ? kidsCategoryLabel(cat, lang) : categoryLabel(cat, lang)) : "";
   return (
     <Stage wide>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-sm opacity-60">Question {room.currentIndex + 1} / {room.questions.length}</span>
-        <span className="flex items-center gap-1 text-sm opacity-60"><Users size={14} /> {answersCount} réponses</span>
+        <span className="text-sm opacity-60">{tr("questionWord")} {room.currentIndex + 1} / {room.questions.length}</span>
+        <span className="flex items-center gap-1 text-sm opacity-60"><Users size={14} /> {answersCount} {tr("answersWord")}</span>
         <span className="flex items-center gap-1" style={{ fontFamily: F.mono, fontSize: 20, color: left <= 5 ? C.pink : C.gold }}><Clock size={18} /> {left}s</span>
       </div>
       <div className="rounded-3xl p-8 mb-6 text-center" style={{ background: "rgba(255,255,255,0.06)" }}>
-        <p className="uppercase tracking-widest mb-3" style={{ fontSize: 20, fontWeight: 800, color: C.gold }}>{cat?.emoji} {cat?.label}</p>
+        <p className="uppercase tracking-widest mb-3" style={{ fontSize: 20, fontWeight: 800, color: C.gold }}>{cat?.emoji} {catLabelText}</p>
         <p style={{ fontFamily: F.display, fontSize: 32 }}>{q.text}</p>
         {q.type === "qcm" && (<div className="grid grid-cols-2 gap-3 mt-6">{q.options.map((o, i) => (<div key={i} className="rounded-xl p-3" style={{ background: revealed && i === q.answer ? C.teal : "rgba(255,255,255,0.08)", color: revealed && i === q.answer ? "#1B1030" : C.cream, fontFamily: F.body, fontWeight: 700, fontSize: 18 }}>{o}</div>))}</div>)}
-        {q.type === "vf" && (<div className="flex gap-4 justify-center mt-6"><div className="rounded-xl px-6 py-3" style={{ background: revealed && q.answer === true ? C.teal : "rgba(255,255,255,0.08)" }}>Vrai</div><div className="rounded-xl px-6 py-3" style={{ background: revealed && q.answer === false ? C.teal : "rgba(255,255,255,0.08)" }}>Faux</div></div>)}
+        {q.type === "vf" && (<div className="flex gap-4 justify-center mt-6"><div className="rounded-xl px-6 py-3" style={{ background: revealed && q.answer === true ? C.teal : "rgba(255,255,255,0.08)" }}>{tr("trueLabel")}</div><div className="rounded-xl px-6 py-3" style={{ background: revealed && q.answer === false ? C.teal : "rgba(255,255,255,0.08)" }}>{tr("falseLabel")}</div></div>)}
         {q.type === "carte" && (<div className="relative rounded-xl mt-6 mx-auto" style={{ width: "100%", maxWidth: 420, height: 220, background: "rgba(255,255,255,0.06)" }}>{MAP_ZONES.map((z) => (<div key={z.id} className="absolute rounded-full px-2 py-1 text-xs" style={{ left: `${z.x}%`, top: `${z.y}%`, transform: "translate(-50%,-50%)", background: revealed && z.id === q.answer ? C.teal : "rgba(255,255,255,0.12)", color: revealed && z.id === q.answer ? "#1B1030" : C.cream }}>{z.label}</div>))}</div>)}
-        {q.type === "echelle" && revealed && <p className="mt-6" style={{ fontFamily: F.mono, fontSize: 26, color: C.teal }}>Réponse : {q.answer} {q.unit || ""} — le(s) plus proche(s) marquent les points</p>}
+        {q.type === "echelle" && revealed && <p className="mt-6" style={{ fontFamily: F.mono, fontSize: 26, color: C.teal }}>{lang === "en" ? `Answer: ${q.answer} ${q.unit || ""}` : `Réponse : ${q.answer} ${q.unit || ""}`}</p>}
       </div>
       {room.settings.hostPlays && hostPid && !revealed && (
         <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(255,255,255,0.05)", border: `2px solid ${C.violet}` }}>
-          <p className="text-sm font-bold mb-3" style={{ color: C.violet }}>🎤 Ta réponse (hôte)</p>
+          <p className="text-sm font-bold mb-3" style={{ color: C.violet }}>{tr("hostAnswerTitle")}</p>
           {hostSubmitted ? (
-            <p className="text-sm opacity-70">Réponse envoyée ✅</p>
+            <p className="text-sm opacity-70">{tr("answerSubmitted")}</p>
           ) : (
-            <QuestionInput
-              q={q}
-              scaleVal={hostScaleVal}
-              setScaleVal={setHostScaleVal}
-              onSubmit={async (value) => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value, jokerUsed: null, submittedAt: Date.now() }); }}
-            />
+            <>
+              {hostJokerUsed?.id === "copieur" && (
+                <div className="rounded-xl p-3 mb-3 text-center text-sm" style={{ background: "rgba(255,201,60,0.1)", color: C.gold }}>
+                  {hostCopyPeek === null ? tr("waitingForTargetAnswer").replace("{name}", hostJokerUsed.targetPseudo || tr("yourTargetFallback")) : tr("targetAnswered").replace("{name}", hostJokerUsed.targetPseudo || tr("yourTargetFallbackCap")).replace("{value}", q.type === "qcm" ? q.options[hostCopyPeek] : q.type === "vf" ? (hostCopyPeek ? tr("trueLabel") : tr("falseLabel")) : q.type === "carte" ? MAP_ZONES.find((z) => z.id === hostCopyPeek)?.label : hostCopyPeek)}
+                </div>
+              )}
+              {q.type === "qcm" && (<div className="grid grid-cols-1 gap-3 mb-4">{q.options.map((o, i) => hostHiddenOptions.includes(i) ? null : (<button key={i} onClick={async () => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value: i, jokerUsed: hostJokerUsed, submittedAt: Date.now() }); }} className="rounded-xl py-3 px-4 text-left flex items-center justify-between" style={{ background: "rgba(255,255,255,0.1)", fontFamily: F.body, fontWeight: 700 }}><span>{o}</span>{hostPollData && hostPollData.total > 0 && <span className="text-sm opacity-70" style={{ fontFamily: F.mono }}>{Math.round((hostPollData.counts[i] / hostPollData.total) * 100)}%</span>}</button>))}</div>)}
+              {q.type === "vf" && (<div className="flex gap-3 mb-4"><button onClick={async () => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value: true, jokerUsed: hostJokerUsed, submittedAt: Date.now() }); }} className="flex-1 rounded-xl py-3" style={{ background: C.teal, color: "#1B1030", fontFamily: F.display }}>{tr("trueLabel")}</button><button onClick={async () => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value: false, jokerUsed: hostJokerUsed, submittedAt: Date.now() }); }} className="flex-1 rounded-xl py-3" style={{ background: C.pink, color: "#1B1030", fontFamily: F.display }}>{tr("falseLabel")}</button></div>)}
+              {q.type === "carte" && (<div className="relative rounded-xl mb-4" style={{ width: "100%", height: 180, background: "rgba(255,255,255,0.06)" }}>{MAP_ZONES.map((z) => (<button key={z.id} onClick={async () => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value: z.id, jokerUsed: hostJokerUsed, submittedAt: Date.now() }); }} className="absolute rounded-full px-2 py-1 text-xs" style={{ left: `${z.x}%`, top: `${z.y}%`, transform: "translate(-50%,-50%)", background: "rgba(255,255,255,0.15)" }}>{z.label}</button>))}</div>)}
+              {q.type === "echelle" && (
+                <QuestionInput
+                  q={q}
+                  scaleVal={hostScaleVal}
+                  setScaleVal={setHostScaleVal}
+                  onSubmit={async (value) => { setHostSubmitted(true); await sSet(answerKey(code, room.currentIndex, hostPid), { pid: hostPid, value, jokerUsed: hostJokerUsed, submittedAt: Date.now() }); }}
+                />
+              )}
+              {!hostPickingTargetFor ? (
+                hostEnabledJokers.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs opacity-60 mb-2">{tr("yourJokersShort")}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {hostEnabledJokers.map((j) => (
+                        <button key={j.id} disabled={!!hostJokerUsed} onClick={() => hostUseJoker(j.id)} className="rounded-xl py-2 px-2 flex flex-col items-center gap-1 disabled:opacity-30 transition-transform active:scale-95" style={{ background: hostJokerUsed?.id === j.id ? C.violet : "rgba(255,255,255,0.1)", border: "2px solid rgba(255,255,255,0.15)" }}>
+                          <j.icon size={18} />
+                          <span style={{ fontFamily: F.display, fontSize: 11 }}>{jokerLabel(j, lang)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="mt-2 rounded-xl p-3" style={{ background: "rgba(123,78,255,0.12)", border: `2px solid ${C.violet}` }}>
+                  <p className="text-xs opacity-80 mb-2 text-center">{tr("chooseTarget")}</p>
+                  <div className="flex flex-wrap gap-3 justify-center">{hostOtherPlayers.map((p) => (<button key={p.id} onClick={() => hostConfirmTarget(p.id)} className="flex flex-col items-center gap-1"><div className="rounded-full flex items-center justify-center" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.08)", fontSize: 22 }}>{p.animal}</div><span className="text-xs">{p.pseudo}</span></button>))}</div>
+                  <div className="mt-2 text-center"><GhostButton onClick={() => setHostPickingTargetFor(null)} small>{tr("cancel")}</GhostButton></div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
       {revealed && playerAnswers.length > 0 && (
         <div className="rounded-2xl p-4 mb-4" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <p className="text-sm font-bold mb-2 opacity-70">Réponses des joueurs</p>
+          <p className="text-sm font-bold mb-2 opacity-70">{tr("playerAnswersTitle")}</p>
           <div className="flex flex-col gap-2">
             {playerAnswers.map((a) => (
               <div key={a.pid} className="flex items-center gap-2 text-sm">
@@ -1801,7 +2291,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       )}
       {revealed && provisional.length > 0 && (
         <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(255,201,60,0.08)" }}>
-          <p className="text-sm font-bold mb-2" style={{ color: C.gold }}>🏆 Classement provisoire</p>
+          <p className="text-sm font-bold mb-2" style={{ color: C.gold }}>{tr("provisionalRanking")}</p>
           <div className="flex flex-col gap-1">
             {provisional.map((p, i) => (
               <div key={p.id} className="flex items-center gap-2 text-sm">
@@ -1814,7 +2304,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
           </div>
         </div>
       )}
-      {revealed ? (<BigButton onClick={next} color={C.pink} icon={ArrowRight}>{room.currentIndex >= room.questions.length - 1 ? "Voir le classement final" : `Question suivante (${autoLeft}s)`}</BigButton>) : (<BigButton onClick={collectAndScore} color={C.violet}>Révéler maintenant</BigButton>)}
+      {revealed ? (<BigButton onClick={next} color={C.pink} icon={ArrowRight}>{room.currentIndex >= room.questions.length - 1 ? tr("finalRankingBtn") : `${tr("nextQuestion")} (${autoLeft}s)`}</BigButton>) : (<BigButton onClick={collectAndScore} color={C.violet}>{tr("revealNow")}</BigButton>)}
     </Stage>
   );
 }
@@ -1822,7 +2312,8 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
 /* ---------------------------------------------------------
    PLAYER GAME
 --------------------------------------------------------- */
-function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJokersEver }) {
+function PlayerGameCore({ code, pid, room, assignedJokers, usedJokersEver, setUsedJokersEver }) {
+  const { lang, t: tr } = useLang();
   const q = room.questions[room.currentIndex];
   const globalLeft = useCountdown(room.questionStartedAt, room.settings.seconds);
   const [speedDeadline, setSpeedDeadline] = useState(null);
@@ -1959,47 +2450,47 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
   const enabledJokers = JOKERS.filter((j) => assignedJokers.includes(j.id) && !usedJokersEver.includes(j.id) && (j.id !== "5050" || q.type === "qcm") && (j.id !== "sondage" || q.type === "qcm"));
 
   return (
-    <Stage>
+    <>
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs opacity-60">Q{room.currentIndex + 1}/{room.questions.length}</span>
         <span style={{ fontFamily: F.mono, fontSize: 20, color: left <= 5 ? C.pink : C.gold }}>{left}s</span>
       </div>
-      {speedDeadline != null && <p className="text-xs text-center mb-2" style={{ color: C.pink }}>⏱️ Ton temps a été réduit par un adversaire !</p>}
+      {speedDeadline != null && <p className="text-xs text-center mb-2" style={{ color: C.pink }}>{tr("timeReducedMsg")}</p>}
       <div>
-        <div className="rounded-2xl p-5 mb-5" style={{ background: "rgba(255,255,255,0.06)" }}><p className="uppercase tracking-widest mb-2" style={{ fontSize: 16, fontWeight: 800, color: C.gold }}>{findCategory(q.category)?.emoji} {findCategory(q.category)?.label}</p><p style={{ fontFamily: F.display, fontSize: 26 }}>{q.text}</p></div>
+        <div className="rounded-2xl p-5 mb-5" style={{ background: "rgba(255,255,255,0.06)" }}><p className="uppercase tracking-widest mb-2" style={{ fontSize: 16, fontWeight: 800, color: C.gold }}>{findCategory(q.category)?.emoji} {(() => { const c = findCategory(q.category); return c ? (c.id.startsWith("k_") ? kidsCategoryLabel(c, lang) : categoryLabel(c, lang)) : ""; })()}</p><p style={{ fontFamily: F.display, fontSize: 26 }}>{q.text}</p></div>
         {jokerUsed?.id === "copieur" && (
           <div className="rounded-xl p-3 mb-4 text-center text-sm" style={{ background: "rgba(255,201,60,0.1)", color: C.gold }}>
-            {copyPeek === null ? `👀 En attente de la réponse de ${jokerUsed.targetPseudo || "ta cible"}...` : `👀 ${jokerUsed.targetPseudo || "Ta cible"} a répondu : ${q.type === "qcm" ? q.options[copyPeek] : q.type === "vf" ? (copyPeek ? "Vrai" : "Faux") : q.type === "carte" ? MAP_ZONES.find((z) => z.id === copyPeek)?.label : copyPeek}`}
+            {copyPeek === null ? tr("waitingForTargetAnswer").replace("{name}", jokerUsed.targetPseudo || tr("yourTargetFallback")) : tr("targetAnswered").replace("{name}", jokerUsed.targetPseudo || tr("yourTargetFallbackCap")).replace("{value}", q.type === "qcm" ? q.options[copyPeek] : q.type === "vf" ? (copyPeek ? tr("trueLabel") : tr("falseLabel")) : q.type === "carte" ? MAP_ZONES.find((z) => z.id === copyPeek)?.label : copyPeek)}
           </div>
         )}
         {!submitted && left > 0 && (
           <>
             {q.type === "qcm" && (<div className="grid grid-cols-1 gap-3 mb-5">{q.options.map((o, i) => hiddenOptions.includes(i) ? null : (<button key={i} onClick={() => submit(i)} className="rounded-xl py-3 px-4 text-left flex items-center justify-between" style={{ background: "rgba(255,255,255,0.08)", fontFamily: F.body, fontWeight: 700, fontSize: 17 }}><span>{o}</span>{pollData && pollData.total > 0 && <span className="text-sm opacity-70" style={{ fontFamily: F.mono }}>{Math.round((pollData.counts[i] / pollData.total) * 100)}%</span>}</button>))}</div>)}
-            {q.type === "vf" && (<div className="flex gap-3 mb-5"><button onClick={() => submit(true)} className="flex-1 rounded-xl py-4" style={{ background: C.teal, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>Vrai</button><button onClick={() => submit(false)} className="flex-1 rounded-xl py-4" style={{ background: C.pink, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>Faux</button></div>)}
+            {q.type === "vf" && (<div className="flex gap-3 mb-5"><button onClick={() => submit(true)} className="flex-1 rounded-xl py-4" style={{ background: C.teal, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>{tr("trueLabel")}</button><button onClick={() => submit(false)} className="flex-1 rounded-xl py-4" style={{ background: C.pink, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>{tr("falseLabel")}</button></div>)}
             {q.type === "carte" && (<div className="relative rounded-xl mb-5" style={{ width: "100%", height: 200, background: "rgba(255,255,255,0.06)" }}>{MAP_ZONES.map((z) => (<button key={z.id} onClick={() => submit(z.id)} className="absolute rounded-full px-2 py-1 text-xs" style={{ left: `${z.x}%`, top: `${z.y}%`, transform: "translate(-50%,-50%)", background: "rgba(255,255,255,0.15)" }}><MapPin size={12} className="inline mr-1" />{z.label}</button>))}</div>)}
-            {q.type === "echelle" && (<div className="mb-5"><div className="flex items-center justify-center gap-3 mb-4"><button onClick={() => setScaleVal((v) => Number(v) - 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button><input type="number" inputMode="decimal" value={scaleVal} onFocus={() => { if (scaleVal === 0) setScaleVal(""); }} onChange={(e) => setScaleVal(e.target.value === "" ? "" : Number(e.target.value))} className="text-center rounded-xl px-4 py-2" style={{ fontFamily: F.mono, fontSize: 28, color: C.cream, background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.2)", width: 140 }} /><button onClick={() => setScaleVal((v) => Number(v) + 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Plus size={16} /></button></div><BigButton onClick={() => submit(scaleVal === "" ? 0 : scaleVal)} color={C.gold}>Valider</BigButton></div>)}
+            {q.type === "echelle" && (<div className="mb-5"><div className="flex items-center justify-center gap-3 mb-4"><button onClick={() => setScaleVal((v) => Number(v) - 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button><input type="number" inputMode="decimal" value={scaleVal} onFocus={() => { if (scaleVal === 0) setScaleVal(""); }} onChange={(e) => setScaleVal(e.target.value === "" ? "" : Number(e.target.value))} className="text-center rounded-xl px-4 py-2" style={{ fontFamily: F.mono, fontSize: 28, color: C.cream, background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.2)", width: 140 }} /><button onClick={() => setScaleVal((v) => Number(v) + 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Plus size={16} /></button></div><BigButton onClick={() => submit(scaleVal === "" ? 0 : scaleVal)} color={C.gold}>{tr("validate")}</BigButton></div>)}
             {!pickingTargetFor && (enabledJokers.length > 0 ? (
               <div className="mt-4">
-                <p className="text-xs opacity-60 mb-2 text-center">Jokers disponibles</p>
+                <p className="text-xs opacity-60 mb-2 text-center">{tr("availableJokers")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {enabledJokers.map((j) => (
                     <button key={j.id} disabled={!!jokerUsed} onClick={() => useJoker(j.id)} className="rounded-2xl py-3 px-3 flex flex-col items-center gap-1 disabled:opacity-30 transition-transform active:scale-95" style={{ background: jokerUsed?.id === j.id ? C.violet : "rgba(255,255,255,0.1)", border: "2px solid rgba(255,255,255,0.15)" }}>
                       <j.icon size={22} />
-                      <span style={{ fontFamily: F.display, fontSize: 14 }}>{j.label}</span>
+                      <span style={{ fontFamily: F.display, fontSize: 14 }}>{jokerLabel(j, lang)}</span>
                     </button>
                   ))}
                 </div>
               </div>
             ) : (
               <p className="text-xs opacity-40 mt-4 text-center">
-                {assignedJokers.length === 0 ? "Aucun joker activé pour cette partie." : "Tu as déjà utilisé tous tes jokers."}
+                {assignedJokers.length === 0 ? tr("noJokerThisGame") : tr("alreadyUsedAll")}
               </p>
             ))}
             {pickingTargetFor && (
               <div className="mt-4 rounded-2xl p-3" style={{ background: "rgba(123,78,255,0.12)", border: `2px solid ${C.violet}` }}>
-                <p className="text-sm opacity-80 mb-2 text-center">Choisis ta cible (tu peux aussi répondre directement, ça annulera ce joker)</p>
+                <p className="text-sm opacity-80 mb-2 text-center">{tr("chooseTarget")} {tr("chooseTargetHint")}</p>
                 <div className="flex flex-wrap gap-3 justify-center">{otherPlayers.map((p) => (<button key={p.id} onClick={() => confirmTarget(p.id)} className="flex flex-col items-center gap-1"><div className="rounded-full flex items-center justify-center" style={{ width: 52, height: 52, background: "rgba(255,255,255,0.08)", fontSize: 26 }}>{p.animal}</div><span className="text-xs">{p.pseudo}</span></button>))}</div>
-                <div className="mt-3 text-center"><GhostButton onClick={() => setPickingTargetFor(null)} small>Annuler</GhostButton></div>
+                <div className="mt-3 text-center"><GhostButton onClick={() => setPickingTargetFor(null)} small>{tr("cancel")}</GhostButton></div>
               </div>
             )}
           </>
@@ -2007,11 +2498,11 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
       </div>
       {(submitted || left === 0) && !revealed && (
         <div className="text-center mt-6 opacity-90">
-          <p style={{ fontFamily: F.display, fontSize: 20 }}>{submitted ? "Réponse envoyée ✅" : "Temps écoulé ⏱️"}</p>
-          <p className="text-sm mt-1 opacity-70">En attente des autres joueurs...</p>
+          <p style={{ fontFamily: F.display, fontSize: 20 }}>{submitted ? tr("answerSubmitted") : tr("timeUp")}</p>
+          <p className="text-sm mt-1 opacity-70">{tr("waitingOthers")}</p>
           {targeters.length > 0 && (
             <p className="text-sm mt-3 rounded-xl py-2 px-3 inline-block" style={{ background: "rgba(255,61,127,0.15)", color: C.pink }}>
-              🎯 {targeters.join(", ")} {targeters.length > 1 ? "t'ont" : "t'a"} ciblé sur cette question !
+              {tr("targetedByMsg").replace("{names}", targeters.join(", ")).replace("{verb}", targeters.length > 1 ? tr("targetedVerbPlural") : tr("targetedVerbSingular"))}
             </p>
           )}
         </div>
@@ -2020,22 +2511,22 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
         <div className="mt-6">
           <div className="text-center mb-4">
             <p style={{ fontFamily: F.display, fontSize: 26, color: myPoints > 0 ? C.teal : myPoints < 0 ? C.pink : C.cream }}>{myPoints > 0 ? `+${myPoints}` : myPoints} pts</p>
-            {q.type === "echelle" && <p className="text-sm opacity-70 mt-1">Réponse : {q.answer} {q.unit || ""}</p>}
+            {q.type === "echelle" && <p className="text-sm opacity-70 mt-1">{lang === "en" ? `Answer: ${q.answer} ${q.unit || ""}` : `Réponse : ${q.answer} ${q.unit || ""}`}</p>}
             {targeters.length > 0 && (
               <p className="text-sm mt-3 rounded-xl py-2 px-3 inline-block" style={{ background: "rgba(255,61,127,0.15)", color: C.pink }}>
-                🎯 {targeters.join(", ")} {targeters.length > 1 ? "t'ont" : "t'a"} ciblé sur cette question !
+                {tr("targetedByMsg").replace("{names}", targeters.join(", ")).replace("{verb}", targeters.length > 1 ? tr("targetedVerbPlural") : tr("targetedVerbSingular"))}
               </p>
             )}
           </div>
           {provisional.length > 0 && (
             <div className="rounded-2xl p-4" style={{ background: "rgba(255,201,60,0.08)" }}>
-              <p className="text-sm font-bold mb-2" style={{ color: C.gold }}>🏆 Classement provisoire</p>
+              <p className="text-sm font-bold mb-2" style={{ color: C.gold }}>{tr("provisionalRanking")}</p>
               <div className="flex flex-col gap-1">
                 {provisional.map((p, i) => (
                   <div key={p.id} className="flex items-center gap-2 text-sm" style={{ fontWeight: p.id === pid ? 800 : 400 }}>
                     <span className="opacity-60" style={{ width: 20 }}>{i + 1}.</span>
                     <span>{p.animal}</span>
-                    <span className="flex-1">{p.pseudo}{p.id === pid ? " (toi)" : ""}</span>
+                    <span className="flex-1">{p.pseudo}{p.id === pid ? tr("you") : ""}</span>
                     <span style={{ fontFamily: F.mono, color: C.teal }}>{p.score}</span>
                   </div>
                 ))}
@@ -2044,6 +2535,14 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
           )}
         </div>
       )}
+    </>
+  );
+}
+
+function PlayerGame(props) {
+  return (
+    <Stage>
+      <PlayerGameCore {...props} />
     </Stage>
   );
 }
@@ -2052,6 +2551,7 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
    RESULTS
 --------------------------------------------------------- */
 function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
+  const { t: tr } = useLang();
   const [ranking, setRanking] = useState([]);
   const teamsMode = room?.settings?.teamsMode || 1;
   useEffect(() => { (async () => { const pKeys = await sList(`qz:${code}:player:`); const players = (await Promise.all(pKeys.map((k) => sGet(k)))).filter(Boolean); const withScores = await Promise.all(players.map(async (p) => ({ ...p, score: (await sGet(scoreKey(code, p.id))) || 0, time: (await sGet(timeKey(code, p.id))) || 0, killer: (await sGet(killerKey(code, p.id))) || 0, victim: (await sGet(victimKey(code, p.id))) || 0 }))); withScores.sort((a, b) => b.score - a.score || a.time - b.time); setRanking(withScores); })(); }, [code]);
@@ -2066,13 +2566,13 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
           {topKiller?.killer > 0 && (
             <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: "rgba(255,61,127,0.12)" }}>
               <span style={{ fontSize: 26 }}>🔪</span>
-              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.pink, textTransform: "uppercase" }}>Serial Killeur</p><p className="text-xs opacity-70">{topKiller.animal} {topKiller.pseudo} — {topKiller.killer} pts volés aux autres</p></div>
+              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.pink, textTransform: "uppercase" }}>{tr("serialKiller")}</p><p className="text-xs opacity-70">{topKiller.animal} {topKiller.pseudo} — {topKiller.killer} {tr("pointsStolen")}</p></div>
             </div>
           )}
           {topVictim?.victim > 0 && (
             <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: "rgba(123,78,255,0.12)" }}>
               <span style={{ fontSize: 26 }}>💀</span>
-              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.violet, textTransform: "uppercase" }}>Victimos</p><p className="text-xs opacity-70">{topVictim.animal} {topVictim.pseudo} — {topVictim.victim} pts subis</p></div>
+              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.violet, textTransform: "uppercase" }}>{tr("victimAward")}</p><p className="text-xs opacity-70">{topVictim.animal} {topVictim.pseudo} — {topVictim.victim} {tr("pointsSuffered")}</p></div>
             </div>
           )}
         </div>
@@ -2090,17 +2590,17 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
         {teamList.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
         <div style={{ position: "relative", zIndex: 10 }}>
           <Logo />
-          <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement par équipe</h2>
+          <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> {tr("teamRanking")}</h2>
           <div className="flex flex-col gap-3">
             {teamList.map((t, i) => (
               <div key={t.team} className="rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}>
-                <div className="flex items-center gap-3 mb-2"><span style={{ fontSize: 22 }}>{medals[i] || `${i + 1}.`}</span><span className="flex-1" style={{ fontFamily: F.display, fontSize: 18 }}>Équipe {t.team}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{t.score}</span></div>
+                <div className="flex items-center gap-3 mb-2"><span style={{ fontSize: 22 }}>{medals[i] || `${i + 1}.`}</span><span className="flex-1" style={{ fontFamily: F.display, fontSize: 18 }}>{tr("teamWord")} {t.team}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{t.score}</span></div>
                 <div className="flex gap-2 flex-wrap pl-2">{t.members.map((m) => (<span key={m.id} className="text-lg" title={m.pseudo}>{m.animal}</span>))}</div>
               </div>
             ))}
           </div>
           {awards}
-          {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
+          {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>{tr("replaySame")}</BigButton><GhostButton onClick={onRestart}>{tr("newGameHome")}</GhostButton></div>}
         </div>
       </Stage>
     );
@@ -2112,13 +2612,13 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
       {ranking.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
       <div style={{ position: "relative", zIndex: 10 }}>
         <Logo />
-        <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement final</h2>
+        <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> {tr("finalRanking")}</h2>
         <div className="flex flex-col gap-3">
           {ranking.map((p, i) => (<div key={p.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}><span style={{ fontSize: 22, width: 32 }}>{medals[i] || `${i + 1}.`}</span><span style={{ fontSize: 28 }}>{p.animal}</span><span className="flex-1" style={{ fontFamily: F.body, fontWeight: 700 }}>{p.pseudo}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{p.score}</span></div>))}
-          {ranking.length === 0 && <p className="text-center opacity-60">Calcul en cours...</p>}
+          {ranking.length === 0 && <p className="text-center opacity-60">{tr("calculating")}</p>}
         </div>
         {awards}
-        {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
+        {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>{tr("replaySame")}</BigButton><GhostButton onClick={onRestart}>{tr("newGameHome")}</GhostButton></div>}
       </div>
     </Stage>
   );
@@ -2975,7 +3475,8 @@ function EnchèrePlayerGame({ code, pid, room }) {
 /* ---------------------------------------------------------
    ROOT APP
 --------------------------------------------------------- */
-export default function QuizApp() {
+function QuizAppInner() {
+  const { lang, t: tr } = useLang();
   useGoogleFonts();
   const [view, setView] = useState("home");
   const [code, setCode] = useState(null);
@@ -2987,6 +3488,8 @@ export default function QuizApp() {
   const [soloProfile, setSoloProfile] = useState(null);
   const [usedJokersEver, setUsedJokersEver] = useState([]);
   const [assignedJokers, setAssignedJokers] = useState([]);
+  const [hostAssignedJokers, setHostAssignedJokers] = useState([]);
+  const [hostUsedJokersEver, setHostUsedJokersEver] = useState([]);
   const [urlCode, setUrlCode] = useState(null);
   const isAdmin = view.startsWith("admin");
   const viewRef = useRef(view);
@@ -3012,7 +3515,7 @@ export default function QuizApp() {
         if (r.phase === "question") setView(isAdmin ? (isMatchAmor ? "admin-matchamor" : isBlindTest ? "admin-blindgame" : isEnchere ? "admin-enchere" : "admin-game") : (isMatchAmor ? "player-matchamor" : isBlindTest ? "player-blindgame" : isEnchere ? "player-enchere" : "player-game"));
         else if (r.phase === "results") setView(isMatchAmor ? "results-matchamor" : "results");
         else if (r.phase === "lobby") {
-          const stillOnboarding = !isAdmin && (viewRef.current === "player-tuto" || viewRef.current === "player-jokerdraw" || viewRef.current === "player-jokerpick");
+          const stillOnboarding = viewRef.current === "player-tuto" || viewRef.current === "player-jokerdraw" || viewRef.current === "player-jokerpick" || viewRef.current === "admin-jokertuto" || viewRef.current === "admin-jokerdraw" || viewRef.current === "admin-jokerpick";
           if (!stillOnboarding) setView(isAdmin ? "admin-lobby" : "player-lobby");
         }
       }
@@ -3022,7 +3525,7 @@ export default function QuizApp() {
     return () => { stop = true; clearInterval(t); };
   }, [code, isAdmin]);
 
-  function resetAll() { setCode(null); setRoom(null); setUsedJokersEver([]); setAssignedJokers([]); setPid(null); setView("home"); }
+  function resetAll() { setCode(null); setRoom(null); setUsedJokersEver([]); setAssignedJokers([]); setHostAssignedJokers([]); setHostUsedJokersEver([]); setPid(null); setView("home"); }
 
   async function playAgain() {
     const playerKeysList = await sList(`qz:${code}:player:`);
@@ -3040,6 +3543,7 @@ export default function QuizApp() {
     await sSet(roomKey(code), resetRoom);
     setRoom(resetRoom);
     setUsedJokersEver([]);
+    setHostUsedJokersEver([]);
     setView(isAdmin ? "admin-lobby" : "player-lobby");
   }
 
@@ -3047,67 +3551,67 @@ export default function QuizApp() {
 
   if (view === "explain-classic") return (
     <ModeExplainer
-      emoji="🎯" title="Quiz Classique" color={C.gold}
+      emoji="🎯" title={tr("explainClassicTitle")} color={C.gold}
       onBack={() => setView("home")}
       onContinue={() => setView("admin-create")}
       bullets={[
-        { emoji: "📱", text: "Chaque joueur répond depuis son téléphone, l'hôte affiche les questions sur un grand écran (TV, PC, tablette...)." },
-        { emoji: "⚡", text: "Plus tu réponds vite ET juste, plus tu marques de points — de 50 à 100 points par bonne réponse selon ta rapidité." },
-        { emoji: "🃏", text: "Jokers en option : vole des points à un adversaire, bloque-le, réduis son temps de réponse..." },
-        { emoji: "🏆", text: "Le classement se met à jour après chaque question, jusqu'au classement final et aux prix spéciaux." },
+        { emoji: "📱", text: tr("explainClassicB1") },
+        { emoji: "⚡", text: tr("explainClassicB2") },
+        { emoji: "🃏", text: tr("explainClassicB3") },
+        { emoji: "🏆", text: tr("explainClassicB4") },
       ]}
-      example="Sur une question à 20 secondes : réponds juste en 2 secondes → 95 points. Réponds juste à la 19ᵉ seconde → seulement 51 points. Une mauvaise réponse ne rapporte rien (ou un malus si l'hôte l'a activé)."
+      example={tr("explainClassicExample")}
     />
   );
   if (view === "explain-solo") return (
     <ModeExplainer
-      emoji="🧑‍🎓" title="Jouer seul" color={C.violet}
+      emoji="🧑‍🎓" title={tr("explainSoloTitle")} color={C.violet}
       onBack={() => setView("home")}
       onContinue={() => setView("solo-home")}
       bullets={[
-        { emoji: "🎯", text: "Entraîne-toi à ton rythme, sans autres joueurs — parfait pour découvrir les catégories avant une vraie partie." },
-        { emoji: "💀", text: "Mode Crash Test : le temps est illimité par question, mais 3 erreurs et c'est terminé !" },
-        { emoji: "🚫", text: "Pas de jokers en solo : ils demandent un adversaire à cibler." },
+        { emoji: "🎯", text: tr("explainSoloB1") },
+        { emoji: "💀", text: tr("explainSoloB2") },
+        { emoji: "🚫", text: tr("explainSoloB3") },
       ]}
     />
   );
   if (view === "explain-matchamor") return (
     <ModeExplainer
-      emoji="💔" title="Match Amor" color={C.pink}
+      emoji="💔" title={tr("explainMatchAmorTitle")} color={C.pink}
       onBack={() => setView("home")}
       onContinue={() => setView("matchamor-create")}
       bullets={[
-        { emoji: "⚔️", text: "Chaque question élimine les joueurs qui se trompent — réponds juste pour rester en course." },
-        { emoji: "🔥", text: "Si tout le monde se trompe (ou si tout le monde répond juste), personne n'est éliminé ce tour-ci." },
-        { emoji: "🏆", text: "Le dernier joueur encore en vie remporte la partie." },
+        { emoji: "⚔️", text: tr("explainMatchAmorB1") },
+        { emoji: "🔥", text: tr("explainMatchAmorB2") },
+        { emoji: "🏆", text: tr("explainMatchAmorB3") },
       ]}
     />
   );
   if (view === "explain-blindtest") return (
     <ModeExplainer
-      emoji="🎧" title="Blind Test musical" color={C.violet}
+      emoji="🎧" title={tr("explainBlindTestTitle")} color={C.violet}
       onBack={() => setView("home")}
       onContinue={() => setView("blindtest-create")}
       bullets={[
-        { emoji: "🔊", text: "Le son se joue depuis l'écran de l'hôte — les joueurs répondent simplement depuis leur téléphone." },
-        { emoji: "🎚️", text: "Choisis l'effet : normal, ralenti, accéléré, ou juste les 2 premières secondes de l'intro." },
-        { emoji: "❓", text: "Types de questions : titre du morceau, artiste, année de sortie, origine de l'artiste." },
+        { emoji: "🔊", text: tr("explainBlindTestB1") },
+        { emoji: "🎚️", text: tr("explainBlindTestB2") },
+        { emoji: "❓", text: tr("explainBlindTestB3") },
       ]}
     />
   );
   if (view === "explain-enchere") return (
     <ModeExplainer
-      emoji="💰" title="Quitte ou Double" color={C.gold}
+      emoji="💰" title={tr("explainEnchereTitle")} color={C.gold}
       onBack={() => setView("home")}
       onContinue={() => setView("enchere-create")}
       bullets={[
-        { emoji: "💵", text: "Chaque joueur démarre avec le même capital de points (10 000 par défaut)." },
-        { emoji: "🎯", text: "Avant chaque question, tu vois seulement le thème et un indice de difficulté — à toi de miser le montant de ton choix." },
-        { emoji: "✅", text: "Bonne réponse : ta mise est doublée et ajoutée à ton total. Mauvaise réponse : tu perds ta mise." },
-        { emoji: "💀", text: "Si tu tombes à 0 point, tu es éliminé : impossible de miser à nouveau." },
-        { emoji: "🏆", text: "À la fin des questions, le joueur avec le plus de points remporte la partie." },
+        { emoji: "💵", text: tr("explainEnchereB1") },
+        { emoji: "🎯", text: tr("explainEnchereB2") },
+        { emoji: "✅", text: tr("explainEnchereB3") },
+        { emoji: "💀", text: tr("explainEnchereB4") },
+        { emoji: "🏆", text: tr("explainEnchereB5") },
       ]}
-      example="Tu as 1000 points et tu mises 300 sur une question annoncée 🔴 Difficile. Bonne réponse → tu gagnes 300 pts (total 1300). Mauvaise réponse → tu perds ta mise (total 700)."
+      example={tr("explainEnchereExample")}
     />
   );
 
@@ -3124,7 +3628,32 @@ export default function QuizApp() {
 
   if (view === "enchere-create") return <CreateEnchere onBack={() => setView("home")} onCreated={(c, r) => { setCode(c); setRoom(r); setView("admin-lobby"); }} />;
 
-  if (view === "admin-create") return <CreateRoom onBack={() => setView("home")} onCreated={(c, r, hostPid) => { setCode(c); setRoom(r); setPid(hostPid || null); setView("admin-lobby"); }} />;
+  if (view === "admin-create") return <CreateRoom onBack={() => setView("home")} onCreated={(c, r, hostPid) => {
+    setCode(c); setRoom(r); setPid(hostPid || null);
+    if (hostPid && r.settings.hostPlays) {
+      setView(r.settings.jokerRandom ? "admin-jokerdraw" : "admin-jokertuto");
+    } else {
+      setView("admin-lobby");
+    }
+  }} />;
+
+  if (view === "admin-jokertuto" && room) return (
+    <JokerTuto
+      room={room}
+      onDone={() => {
+        const enabledIds = Object.entries(room.settings.jokers || {}).filter(([, v]) => v).map(([k]) => k);
+        if ((room.settings.jokerRandomCount || 2) >= enabledIds.length) {
+          sSet(`qz:${code}:playerjokers:${pid}`, enabledIds);
+          setHostAssignedJokers(enabledIds);
+          setView("admin-lobby");
+        } else {
+          setView("admin-jokerpick");
+        }
+      }}
+    />
+  );
+  if (view === "admin-jokerdraw" && room) return <JokerDraw room={room} code={code} pid={pid} onDone={(picked) => { setHostAssignedJokers(picked); setView("admin-lobby"); }} />;
+  if (view === "admin-jokerpick" && room) return <JokerPick room={room} code={code} pid={pid} onDone={(picked) => { setHostAssignedJokers(picked); setView("admin-lobby"); }} />;
 
 
   if (view === "player-join") return (
@@ -3177,7 +3706,7 @@ export default function QuizApp() {
 
   if (view === "player-lobby" && profile) return <PlayerLobby profile={profile} code={code} assignedJokers={assignedJokers} />;
 
-  if (view === "admin-game" && room) return <AdminGame code={code} room={room} onRoomChange={(r) => setRoom(r)} onFinished={(r) => { setRoom(r); setView("results"); }} hostPid={pid} />;
+  if (view === "admin-game" && room) return <AdminGame code={code} room={room} onRoomChange={(r) => setRoom(r)} onFinished={(r) => { setRoom(r); setView("results"); }} hostPid={pid} hostAssignedJokers={hostAssignedJokers} hostUsedJokersEver={hostUsedJokersEver} setHostUsedJokersEver={setHostUsedJokersEver} />;
   if (view === "player-game" && room) return <PlayerGame code={code} pid={pid} room={room} assignedJokers={assignedJokers} usedJokersEver={usedJokersEver} setUsedJokersEver={setUsedJokersEver} />;
   if (view === "results") return <Results code={code} room={room} isAdmin={isAdmin} onRestart={resetAll} onPlayAgain={playAgain} />;
 
@@ -3190,4 +3719,15 @@ export default function QuizApp() {
   if (view === "results-matchamor") return <MatchAmorResults code={code} room={room} isAdmin={isAdmin} onRestart={resetAll} />;
 
   return (<Stage><p className="text-center opacity-60 mt-10">Chargement...</p></Stage>);
+}
+
+export default function QuizApp() {
+  const [lang, setLang] = useState(getStoredLang());
+  useEffect(() => { storeLang(lang); }, [lang]);
+  const value = { lang, t: (k) => t(lang, k), setLang };
+  return (
+    <LangContext.Provider value={value}>
+      <QuizAppInner />
+    </LangContext.Provider>
+  );
 }
