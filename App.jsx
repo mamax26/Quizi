@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Users, Crown, Zap, Shield, Swords, Percent, EyeOff, Sparkles, Play, Copy, Check, ArrowRight, Trophy, Clock, Plus, Minus, MapPin, RefreshCw, Skull, Heart, Cast, Info } from "lucide-react";
+import { Users, Crown, Zap, Shield, ShieldCheck, Swords, Percent, EyeOff, Sparkles, Play, Copy, Check, ArrowRight, Trophy, Clock, Plus, Minus, MapPin, RefreshCw, Skull, Heart, Cast, Info, BarChart3, Hourglass } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set as fbSet, query, orderByKey, startAt, endAt } from "firebase/database";
 
@@ -33,7 +33,7 @@ function useGoogleFonts() {
   }, []);
 }
 const F = { display: "'Baloo 2', system-ui, sans-serif", body: "'Nunito', system-ui, sans-serif", mono: "'Space Mono', monospace" };
-const C = { bg: "#180F2E", bg2: "#241645", pink: "#FF3D7F", gold: "#FFC93C", teal: "#2EE6D6", violet: "#7B4EFF", cream: "#FFF6E9" };
+const C = { bg: "#180F2E", bg2: "#241645", pink: "#FF3D7F", gold: "#FFC93C", teal: "#2EE6D6", violet: "#7B4EFF", cream: "#FFF6E9", mint: "#4ADE80" };
 
 /* ---------------------------------------------------------
    ANIMATIONS DE FIN DE PARTIE (confettis / pluie d'emojis)
@@ -149,6 +149,7 @@ const speedChronoKey = (code, qIdx, targetId) => `qz:${code}:speedchrono:${qIdx}
 const revealedKey = (code, qIdx) => `qz:${code}:revealed:${qIdx}`;
 const pointsDeltaKey = (code, qIdx, pid) => `qz:${code}:pointsdelta:${qIdx}:${pid}`;
 const betKey = (code, qIdx, pid) => `qz:${code}:bet:${qIdx}:${pid}`;
+const shieldKey = (code, qIdx, pid) => `qz:${code}:shield:${qIdx}:${pid}`;
 const debuffKeyPrefix = (code, qIdx, targetId) => `qz:${code}:debuff:${qIdx}:${targetId}:`;
 
 /* ---------------------------------------------------------
@@ -762,6 +763,10 @@ const JOKERS = [
   { id: "steal", label: "Vol de points", icon: Swords, emoji: "🗡️", desc: "Si tu réponds juste, vole 30 points à l'adversaire de ton choix.", targeted: true },
   { id: "block", label: "Blocage", icon: Shield, emoji: "🛡️", desc: "Si tu réponds juste, l'adversaire ciblé ne marque aucun point sur cette question.", targeted: true },
   { id: "speedchrono", label: "Speed Chrono", icon: Clock, emoji: "⏱️", desc: "Divise par deux le temps restant d'un adversaire pour répondre à cette question.", targeted: true },
+  { id: "copieur", label: "Copieur", icon: Copy, emoji: "📋", desc: "Espionne la réponse déjà validée d'un adversaire avant de donner la tienne (s'il n'a pas encore répondu, tu ne verras rien).", targeted: true },
+  { id: "bouclier", label: "Bouclier", icon: ShieldCheck, emoji: "🔰", desc: "Te protège d'un Vol de points ou d'un Blocage pendant cette question.", targeted: false },
+  { id: "sondage", label: "Sondage", icon: BarChart3, emoji: "📊", desc: "Affiche en direct le pourcentage de joueurs ayant choisi chaque réponse (QCM uniquement).", targeted: false },
+  { id: "voleurtemps", label: "Voleur du Temps", icon: Hourglass, emoji: "⌛", desc: "Vole 3 secondes à TOUS les autres joueurs sur cette question — le temps volé t'est intégralement reversé.", targeted: false },
 ];
 const CARD_BACK_COLORS = [C.pink, C.teal, C.gold, C.violet, "#4ADE80", "#FF8C42"];
 
@@ -805,8 +810,9 @@ function ScreenHeader({ title, onBack, color = C.gold }) {
   );
 }
 function BigButton({ children, onClick, color = C.pink, disabled, icon: Icon }) {
+  const textColor = color === C.violet ? C.cream : "#1B1030";
   return (
-    <button onClick={onClick} disabled={disabled} className="w-full rounded-2xl py-4 px-6 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-40" style={{ background: color, fontFamily: F.display, fontSize: 20, color: "#1B1030", boxShadow: `0 6px 0 rgba(0,0,0,0.25)` }}>
+    <button onClick={onClick} disabled={disabled} className="w-full rounded-2xl py-4 px-6 flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-40" style={{ background: color, fontFamily: F.display, fontSize: 20, color: textColor, boxShadow: `0 6px 0 rgba(0,0,0,0.25)` }}>
       {Icon && <Icon size={20} />}
       {children}
     </button>
@@ -868,8 +874,8 @@ function Home({ onCreate, onJoin, onSolo, onMatchAmor, onBlindTest, onEnchere })
         <BigButton onClick={onJoin} color={C.teal} icon={Users}>Rejoindre une partie</BigButton>
         <BigButton onClick={onBlindTest} color={C.violet}>🎧 Blind Test musical</BigButton>
         <BigButton onClick={onEnchere} color={C.gold}>💰 Quitte ou Double</BigButton>
-        <BigButton onClick={onMatchAmor} color={C.pink} icon={Skull}>Match Amor (élimination) 💔</BigButton>
-        <BigButton onClick={onSolo} color={C.violet} icon={Skull}>Jouer seul / tester</BigButton>
+        <BigButton onClick={onMatchAmor} color={C.pink} icon={Skull}>Match Amor 💔</BigButton>
+        <BigButton onClick={onSolo} color={C.mint} icon={Skull}>Jouer seul</BigButton>
       </div>
     </Stage>
   );
@@ -1114,13 +1120,13 @@ function AvatarPicker({ animal, onPick, taken }) {
 function CreateRoom({ onCreated, onBack }) {
   const [cats, setCats] = useState(["animaux", "geo", "films"]);
   const [nbQuestions, setNbQuestions] = useState(10);
-  const [types, setTypes] = useState({ qcm: true, vf: true, carte: true, echelle: true });
-  const [jokers, setJokers] = useState({ "5050": true, x2: true, steal: true, block: false, speedchrono: true });
+  const [types, setTypes] = useState({ qcm: true, vf: true, echelle: true });
+  const [jokers, setJokers] = useState({ "5050": true, x2: true, steal: true, block: true, speedchrono: true });
   const [seconds, setSeconds] = useState(20);
   const [teamsMode, setTeamsMode] = useState(1);
   const [malus, setMalus] = useState(0);
   const [jokerRandom, setJokerRandom] = useState(false);
-  const [jokerRandomCount, setJokerRandomCount] = useState(2);
+  const [jokerRandomCount, setJokerRandomCount] = useState(5);
   const [kidsMode, setKidsMode] = useState(false);
   const [hostPlays, setHostPlays] = useState(false);
   const [hostAnimal, setHostAnimal] = useState(null);
@@ -1156,7 +1162,6 @@ function CreateRoom({ onCreated, onBack }) {
       <div className="flex flex-wrap gap-2 mb-6">
         <Chip active={types.qcm} onClick={() => toggleType("qcm")}>QCM</Chip>
         <Chip active={types.vf} onClick={() => toggleType("vf")}>Vrai / Faux</Chip>
-        <Chip active={types.carte} onClick={() => toggleType("carte")}>Pointer sur la carte</Chip>
         <Chip active={types.echelle} onClick={() => toggleType("echelle")}>Réponse chiffrée</Chip>
       </div>
       <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1666,8 +1671,11 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       }
     });
 
+    const shieldedIds = new Set();
+    for (const p of players) { if (await sGet(shieldKey(code, room.currentIndex, p.id))) shieldedIds.add(p.id); }
+
     const blockedDamage = {};
-    answers.forEach((a) => { if (a.jokerUsed?.id === "block" && correctness[a.pid] && a.jokerUsed.targetId) { blockedDamage[a.jokerUsed.targetId] = gained[a.jokerUsed.targetId] || 0; gained[a.jokerUsed.targetId] = 0; } });
+    answers.forEach((a) => { if (a.jokerUsed?.id === "block" && correctness[a.pid] && a.jokerUsed.targetId && !shieldedIds.has(a.jokerUsed.targetId)) { blockedDamage[a.jokerUsed.targetId] = gained[a.jokerUsed.targetId] || 0; gained[a.jokerUsed.targetId] = 0; } });
 
     const netDelta = { ...gained };
 
@@ -1679,7 +1687,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       await sSet(timeKey(code, a.pid), prevTime + elapsed);
     }
 
-    const stealOps = answers.filter((a) => a.jokerUsed?.id === "steal" && correctness[a.pid] && a.jokerUsed.targetId);
+    const stealOps = answers.filter((a) => a.jokerUsed?.id === "steal" && correctness[a.pid] && a.jokerUsed.targetId && !shieldedIds.has(a.jokerUsed.targetId));
     for (const op of stealOps) {
       const targetScore = (await sGet(scoreKey(code, op.jokerUsed.targetId))) || 0;
       const steal = Math.min(30, targetScore);
@@ -1828,10 +1836,12 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
   const [revealed, setRevealed] = useState(false);
   const [myPoints, setMyPoints] = useState(0);
   const [provisional, setProvisional] = useState([]);
+  const [copyPeek, setCopyPeek] = useState(null);
+  const [pollData, setPollData] = useState(null);
 
   const left = speedDeadline != null ? Math.max(0, Math.ceil((speedDeadline - Date.now()) / 1000)) : globalLeft;
 
-  useEffect(() => { setSubmitted(false); setHiddenOptions([]); setJokerUsed(null); setScaleVal(0); setPickingTargetFor(null); setSpeedDeadline(null); setTargeters([]); setRevealed(false); setMyPoints(0); setProvisional([]); }, [room.currentIndex]);
+  useEffect(() => { setSubmitted(false); setHiddenOptions([]); setJokerUsed(null); setScaleVal(0); setPickingTargetFor(null); setSpeedDeadline(null); setTargeters([]); setRevealed(false); setMyPoints(0); setProvisional([]); setCopyPeek(null); setPollData(null); }, [room.currentIndex]);
 
   useEffect(() => {
     if (!(submitted || left === 0)) return;
@@ -1883,12 +1893,13 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
   }
   async function confirmTarget(targetId) {
     const jokerId = pickingTargetFor;
-    setJokerUsed({ id: jokerId, targetId });
+    const targetPlayer = otherPlayers.find((p) => p.id === targetId);
+    setJokerUsed({ id: jokerId, targetId, targetPseudo: targetPlayer?.pseudo });
     const nextUsed = [...usedJokersEver, jokerId];
     setUsedJokersEver(nextUsed);
     sSet(`qz:${code}:jokerused:${pid}`, nextUsed);
     setPickingTargetFor(null);
-    await sSet(targetedKey(code, room.currentIndex, targetId, pid), true);
+    if (jokerId !== "copieur") await sSet(targetedKey(code, room.currentIndex, targetId, pid), true);
     if (jokerId === "speedchrono") {
       const elapsed = (Date.now() - room.questionStartedAt) / 1000;
       const remaining = Math.max(0, room.settings.seconds - elapsed);
@@ -1904,9 +1915,48 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
     setUsedJokersEver(nextUsed);
     sSet(`qz:${code}:jokerused:${pid}`, nextUsed);
     if (id === "5050" && q.type === "qcm") { const wrongIdx = q.options.map((_, i) => i).filter((i) => i !== q.answer); setHiddenOptions(wrongIdx.sort(() => Math.random() - 0.5).slice(0, 2)); }
+    if (id === "bouclier") sSet(shieldKey(code, room.currentIndex, pid), true);
+    if (id === "voleurtemps") {
+      (async () => {
+        const keys = await sList(`qz:${code}:player:`);
+        const others = (await Promise.all(keys.map((k) => sGet(k)))).filter((p) => p && p.id !== pid);
+        const elapsed = (Date.now() - room.questionStartedAt) / 1000;
+        const remaining = Math.max(0, room.settings.seconds - elapsed);
+        const gain = 3 * others.length;
+        await sSet(speedChronoKey(code, room.currentIndex, pid), { deadline: Date.now() + (remaining + gain) * 1000 });
+        for (const o of others) {
+          await sSet(speedChronoKey(code, room.currentIndex, o.id), { deadline: Date.now() + Math.max(0, remaining - 3) * 1000 });
+        }
+      })();
+    }
   }
 
-  const enabledJokers = JOKERS.filter((j) => assignedJokers.includes(j.id) && !usedJokersEver.includes(j.id) && (j.id !== "5050" || q.type === "qcm"));
+  useEffect(() => {
+    if (jokerUsed?.id !== "copieur" || submitted || copyPeek !== null) return;
+    let stop = false;
+    const t = setInterval(async () => {
+      const a = await sGet(answerKey(code, room.currentIndex, jokerUsed.targetId));
+      if (stop || !a) return;
+      clearInterval(t);
+      setCopyPeek(a.value);
+    }, 700);
+    return () => { stop = true; clearInterval(t); };
+  }, [jokerUsed, submitted, copyPeek, code, room.currentIndex]);
+
+  useEffect(() => {
+    if (jokerUsed?.id !== "sondage" || q.type !== "qcm" || submitted) return;
+    let stop = false;
+    const t = setInterval(async () => {
+      const keys = await sList(`qz:${code}:answer:${room.currentIndex}:`);
+      const answers = (await Promise.all(keys.map((k) => sGet(k)))).filter(Boolean);
+      if (stop) return;
+      const counts = q.options.map((_, i) => answers.filter((a) => a.value === i).length);
+      setPollData({ counts, total: answers.length });
+    }, 800);
+    return () => { stop = true; clearInterval(t); };
+  }, [jokerUsed, q, submitted, code, room.currentIndex]);
+
+  const enabledJokers = JOKERS.filter((j) => assignedJokers.includes(j.id) && !usedJokersEver.includes(j.id) && (j.id !== "5050" || q.type === "qcm") && (j.id !== "sondage" || q.type === "qcm"));
 
   return (
     <Stage>
@@ -1917,9 +1967,14 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
       {speedDeadline != null && <p className="text-xs text-center mb-2" style={{ color: C.pink }}>⏱️ Ton temps a été réduit par un adversaire !</p>}
       <div>
         <div className="rounded-2xl p-5 mb-5" style={{ background: "rgba(255,255,255,0.06)" }}><p className="uppercase tracking-widest mb-2" style={{ fontSize: 16, fontWeight: 800, color: C.gold }}>{findCategory(q.category)?.emoji} {findCategory(q.category)?.label}</p><p style={{ fontFamily: F.display, fontSize: 26 }}>{q.text}</p></div>
+        {jokerUsed?.id === "copieur" && (
+          <div className="rounded-xl p-3 mb-4 text-center text-sm" style={{ background: "rgba(255,201,60,0.1)", color: C.gold }}>
+            {copyPeek === null ? `👀 En attente de la réponse de ${jokerUsed.targetPseudo || "ta cible"}...` : `👀 ${jokerUsed.targetPseudo || "Ta cible"} a répondu : ${q.type === "qcm" ? q.options[copyPeek] : q.type === "vf" ? (copyPeek ? "Vrai" : "Faux") : q.type === "carte" ? MAP_ZONES.find((z) => z.id === copyPeek)?.label : copyPeek}`}
+          </div>
+        )}
         {!submitted && left > 0 && (
           <>
-            {q.type === "qcm" && (<div className="grid grid-cols-1 gap-3 mb-5">{q.options.map((o, i) => hiddenOptions.includes(i) ? null : (<button key={i} onClick={() => submit(i)} className="rounded-xl py-3 px-4 text-left" style={{ background: "rgba(255,255,255,0.08)", fontFamily: F.body, fontWeight: 700, fontSize: 17 }}>{o}</button>))}</div>)}
+            {q.type === "qcm" && (<div className="grid grid-cols-1 gap-3 mb-5">{q.options.map((o, i) => hiddenOptions.includes(i) ? null : (<button key={i} onClick={() => submit(i)} className="rounded-xl py-3 px-4 text-left flex items-center justify-between" style={{ background: "rgba(255,255,255,0.08)", fontFamily: F.body, fontWeight: 700, fontSize: 17 }}><span>{o}</span>{pollData && pollData.total > 0 && <span className="text-sm opacity-70" style={{ fontFamily: F.mono }}>{Math.round((pollData.counts[i] / pollData.total) * 100)}%</span>}</button>))}</div>)}
             {q.type === "vf" && (<div className="flex gap-3 mb-5"><button onClick={() => submit(true)} className="flex-1 rounded-xl py-4" style={{ background: C.teal, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>Vrai</button><button onClick={() => submit(false)} className="flex-1 rounded-xl py-4" style={{ background: C.pink, color: "#1B1030", fontFamily: F.display, fontSize: 18 }}>Faux</button></div>)}
             {q.type === "carte" && (<div className="relative rounded-xl mb-5" style={{ width: "100%", height: 200, background: "rgba(255,255,255,0.06)" }}>{MAP_ZONES.map((z) => (<button key={z.id} onClick={() => submit(z.id)} className="absolute rounded-full px-2 py-1 text-xs" style={{ left: `${z.x}%`, top: `${z.y}%`, transform: "translate(-50%,-50%)", background: "rgba(255,255,255,0.15)" }}><MapPin size={12} className="inline mr-1" />{z.label}</button>))}</div>)}
             {q.type === "echelle" && (<div className="mb-5"><div className="flex items-center justify-center gap-3 mb-4"><button onClick={() => setScaleVal((v) => Number(v) - 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Minus size={16} /></button><input type="number" inputMode="decimal" value={scaleVal} onFocus={() => { if (scaleVal === 0) setScaleVal(""); }} onChange={(e) => setScaleVal(e.target.value === "" ? "" : Number(e.target.value))} className="text-center rounded-xl px-4 py-2" style={{ fontFamily: F.mono, fontSize: 28, color: C.cream, background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.2)", width: 140 }} /><button onClick={() => setScaleVal((v) => Number(v) + 1)} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><Plus size={16} /></button></div><BigButton onClick={() => submit(scaleVal === "" ? 0 : scaleVal)} color={C.gold}>Valider</BigButton></div>)}
@@ -3094,7 +3149,15 @@ export default function QuizApp() {
     <JokerTuto
       room={room}
       onDone={() => {
-        setView(room.settings.jokerRandom ? "player-jokerdraw" : "player-jokerpick");
+        const enabledIds = Object.entries(room.settings.jokers || {}).filter(([, v]) => v).map(([k]) => k);
+        if (room.settings.jokerRandom) { setView("player-jokerdraw"); }
+        else if ((room.settings.jokerRandomCount || 2) >= enabledIds.length) {
+          sSet(`qz:${code}:playerjokers:${pid}`, enabledIds);
+          setAssignedJokers(enabledIds);
+          setView("player-lobby");
+        } else {
+          setView("player-jokerpick");
+        }
       }}
     />
   );
