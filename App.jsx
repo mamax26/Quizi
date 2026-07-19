@@ -61,7 +61,7 @@ function FallingEmojis({ emojis, count = 24, side }) {
     }))
   );
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 50 }}>
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
       {particles.map((p) => (
         <span key={p.id} style={{ position: "absolute", left: `${p.left}%`, top: 0, fontSize: p.size, animation: `quizFall ${p.duration}s linear ${p.delay}s infinite` }}>
           {p.emoji}
@@ -1464,6 +1464,19 @@ function AdminLobby({ code, room, onStart, buildExtraOnStart, onBack }) {
 }
 
 function PlayerLobby({ profile, code, assignedJokers }) {
+  const [players, setPlayers] = useState([]);
+  useEffect(() => {
+    let stop = false;
+    const refresh = async () => {
+      const keys = await sList(`qz:${code}:player:`);
+      const list = (await Promise.all(keys.map((k) => sGet(k)))).filter(Boolean);
+      if (!stop) setPlayers(list);
+    };
+    refresh();
+    const t = setInterval(refresh, 1500);
+    return () => { stop = true; clearInterval(t); };
+  }, [code]);
+
   return (
     <Stage>
       <Logo />
@@ -1471,15 +1484,27 @@ function PlayerLobby({ profile, code, assignedJokers }) {
         <div className="flex items-center justify-center rounded-full" style={{ width: 88, height: 88, background: "rgba(255,255,255,0.08)", border: `3px solid ${C.teal}`, fontSize: 42 }}>{profile.animal}</div>
         <p style={{ fontFamily: F.display, fontSize: 22 }}>{profile.pseudo}</p>
         <p className="text-sm opacity-60">Salle {code}</p>
-        <p className="mt-6 text-center opacity-70">En attente que l'hôte lance la partie... 🎬</p>
-        <div className="mt-4 rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)" }}>
+        <p className="mt-2 text-center opacity-70">En attente que l'hôte lance la partie... 🎬</p>
+        <div className="mt-4 rounded-2xl p-4 w-full" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <p className="text-sm font-bold mb-3 opacity-70 flex items-center gap-2"><Users size={16} /> Joueurs dans la salle ({players.length})</p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {players.map((p) => (
+              <div key={p.id} className="flex flex-col items-center gap-1" style={{ width: 72 }}>
+                <div className="flex items-center justify-center rounded-full" style={{ width: 48, height: 48, background: "rgba(255,255,255,0.08)", fontSize: 24, border: p.pseudo === profile.pseudo && p.animal === profile.animal ? `2px solid ${C.gold}` : "none" }}>{p.animal}</div>
+                <span className="text-xs text-center truncate w-full">{p.pseudo}</span>
+              </div>
+            ))}
+            {players.length === 0 && <p className="text-xs opacity-50">Chargement...</p>}
+          </div>
+        </div>
+        <div className="mt-2 rounded-xl p-3 text-center w-full" style={{ background: "rgba(255,255,255,0.05)" }}>
           <p className="text-xs opacity-60 mb-1">Tes jokers pour cette partie :</p>
           {assignedJokers && assignedJokers.length > 0 ? (
             <div className="flex gap-2 justify-center flex-wrap">
               {assignedJokers.map((id) => { const j = JOKERS.find((x) => x.id === id); return j ? <span key={id} className="text-xs rounded-full px-3 py-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {j.label}</span> : null; })}
             </div>
           ) : (
-            <p className="text-xs" style={{ color: C.pink }}>Aucun joker assigné (debug: {JSON.stringify(assignedJokers)})</p>
+            <p className="text-xs opacity-50">Aucun joker pour cette partie.</p>
           )}
         </div>
       </div>
@@ -1866,18 +1891,20 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
       <Stage>
         {teamList.length > 0 && <FallingEmojis emojis={["🎉", "🎊", "✨", "🥳"]} side="left" count={20} />}
         {teamList.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
-        <Logo />
-        <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement par équipe</h2>
-        <div className="flex flex-col gap-3">
-          {teamList.map((t, i) => (
-            <div key={t.team} className="rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center gap-3 mb-2"><span style={{ fontSize: 22 }}>{medals[i] || `${i + 1}.`}</span><span className="flex-1" style={{ fontFamily: F.display, fontSize: 18 }}>Équipe {t.team}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{t.score}</span></div>
-              <div className="flex gap-2 flex-wrap pl-2">{t.members.map((m) => (<span key={m.id} className="text-lg" title={m.pseudo}>{m.animal}</span>))}</div>
-            </div>
-          ))}
+        <div style={{ position: "relative", zIndex: 10 }}>
+          <Logo />
+          <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement par équipe</h2>
+          <div className="flex flex-col gap-3">
+            {teamList.map((t, i) => (
+              <div key={t.team} className="rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}>
+                <div className="flex items-center gap-3 mb-2"><span style={{ fontSize: 22 }}>{medals[i] || `${i + 1}.`}</span><span className="flex-1" style={{ fontFamily: F.display, fontSize: 18 }}>Équipe {t.team}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{t.score}</span></div>
+                <div className="flex gap-2 flex-wrap pl-2">{t.members.map((m) => (<span key={m.id} className="text-lg" title={m.pseudo}>{m.animal}</span>))}</div>
+              </div>
+            ))}
+          </div>
+          {awards}
+          {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
         </div>
-        {awards}
-        {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
       </Stage>
     );
   }
@@ -1886,14 +1913,16 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
     <Stage>
       {ranking.length > 0 && <FallingEmojis emojis={["🎉", "🎊", "✨", "🥳"]} side="left" count={20} />}
       {ranking.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
-      <Logo />
-      <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement final</h2>
-      <div className="flex flex-col gap-3">
-        {ranking.map((p, i) => (<div key={p.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}><span style={{ fontSize: 22, width: 32 }}>{medals[i] || `${i + 1}.`}</span><span style={{ fontSize: 28 }}>{p.animal}</span><span className="flex-1" style={{ fontFamily: F.body, fontWeight: 700 }}>{p.pseudo}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{p.score}</span></div>))}
-        {ranking.length === 0 && <p className="text-center opacity-60">Calcul en cours...</p>}
+      <div style={{ position: "relative", zIndex: 10 }}>
+        <Logo />
+        <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement final</h2>
+        <div className="flex flex-col gap-3">
+          {ranking.map((p, i) => (<div key={p.id} className="flex items-center gap-3 rounded-xl p-3" style={{ background: i === 0 ? "rgba(255,201,60,0.15)" : "rgba(255,255,255,0.06)" }}><span style={{ fontSize: 22, width: 32 }}>{medals[i] || `${i + 1}.`}</span><span style={{ fontSize: 28 }}>{p.animal}</span><span className="flex-1" style={{ fontFamily: F.body, fontWeight: 700 }}>{p.pseudo}</span><span style={{ fontFamily: F.mono, fontSize: 18, color: C.teal }}>{p.score}</span></div>))}
+          {ranking.length === 0 && <p className="text-center opacity-60">Calcul en cours...</p>}
+        </div>
+        {awards}
+        {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
       </div>
-      {awards}
-      {isAdmin && <div className="mt-8 flex flex-col gap-3"><BigButton onClick={onPlayAgain} color={C.teal} icon={RefreshCw}>Rejouer (mêmes joueurs)</BigButton><GhostButton onClick={onRestart}>Nouvelle partie depuis l'accueil</GhostButton></div>}
     </Stage>
   );
 }
