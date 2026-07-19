@@ -784,7 +784,7 @@ function CategoryPicker({ cats, setCats, kidsMode, setKidsMode }) {
 /* ---------------------------------------------------------
    HOME
 --------------------------------------------------------- */
-function Home({ onCreate, onJoin, onSolo, onMatchAmor, onTestLab, onBlindTest }) {
+function Home({ onCreate, onJoin, onSolo, onMatchAmor, onBlindTest }) {
   return (
     <Stage>
       <Logo />
@@ -797,7 +797,6 @@ function Home({ onCreate, onJoin, onSolo, onMatchAmor, onTestLab, onBlindTest })
         <BigButton onClick={onBlindTest} color={C.violet}>🎧 Blind Test musical</BigButton>
         <BigButton onClick={onMatchAmor} color={C.pink} icon={Skull}>Match Amor (élimination) 💔</BigButton>
         <BigButton onClick={onSolo} color={C.violet} icon={Skull}>Jouer seul / tester</BigButton>
-        <GhostButton onClick={onTestLab}>🧪 Espace test (simuler 2 joueurs)</GhostButton>
       </div>
     </Stage>
   );
@@ -1428,7 +1427,7 @@ function AdminLobby({ code, room, onStart, buildExtraOnStart, onBack }) {
   );
 }
 
-function PlayerLobby({ profile, code }) {
+function PlayerLobby({ profile, code, assignedJokers }) {
   return (
     <Stage>
       <Logo />
@@ -1437,6 +1436,16 @@ function PlayerLobby({ profile, code }) {
         <p style={{ fontFamily: F.display, fontSize: 22 }}>{profile.pseudo}</p>
         <p className="text-sm opacity-60">Salle {code}</p>
         <p className="mt-6 text-center opacity-70">En attente que l'hôte lance la partie... 🎬</p>
+        <div className="mt-4 rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <p className="text-xs opacity-60 mb-1">Tes jokers pour cette partie :</p>
+          {assignedJokers && assignedJokers.length > 0 ? (
+            <div className="flex gap-2 justify-center flex-wrap">
+              {assignedJokers.map((id) => { const j = JOKERS.find((x) => x.id === id); return j ? <span key={id} className="text-xs rounded-full px-3 py-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {j.label}</span> : null; })}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: C.pink }}>Aucun joker assigné (debug: {JSON.stringify(assignedJokers)})</p>
+          )}
+        </div>
       </div>
     </Stage>
   );
@@ -1552,7 +1561,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       if (playerKeys.length > 0 && keys.length >= playerKeys.length && !advancingRef.current) collectAndScore();
     }, 1000);
     return () => clearInterval(t);
-  }, [room.currentIndex, code, collectAndScore]);
+  }, [room.currentIndex, code]);
   useEffect(() => { if (left === 0 && !revealed) collectAndScore(); }, [left, revealed, collectAndScore]);
 
   async function next() {
@@ -2315,104 +2324,6 @@ function BlindTestPlayerGame({ code, pid, room }) {
 }
 
 /* ---------------------------------------------------------
-   ESPACE TEST — simuler 2 joueurs pour prévisualiser tuto/tirage
---------------------------------------------------------- */
-function JokerTutoInline({ room, onDone }) {
-  const enabled = JOKERS.filter((j) => room?.settings?.jokers?.[j.id]);
-  const isRandom = room?.settings?.jokerRandom;
-  return (
-    <div className="p-2">
-      <div className="text-center mb-1" style={{ fontSize: 26 }}>🎪</div>
-      <p className="text-center mb-2" style={{ fontFamily: F.display, fontSize: 16, color: C.gold }}>La boîte à jokers</p>
-      <p className="text-[11px] opacity-70 mb-3 text-center">{isRandom ? `Tirage au sort : ${room.settings.jokerRandomCount || 2} joker(s) parmi ceux-ci.` : "Chaque joker : 1 fois par partie, 1 par question."}</p>
-      <div className="flex flex-col gap-2 mb-4">
-        {enabled.map((j) => (
-          <div key={j.id} className="rounded-xl p-2 flex items-center gap-2" style={{ background: "rgba(255,255,255,0.06)", border: "2px solid rgba(255,255,255,0.12)" }}>
-            <div className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 30, height: 30, background: "rgba(255,255,255,0.1)", fontSize: 14 }}>{j.emoji}</div>
-            <div><p style={{ fontFamily: F.display, fontSize: 12, color: C.gold }}>{j.label}</p><p className="text-[10px] opacity-80">{j.desc}</p></div>
-          </div>
-        ))}
-      </div>
-      <BigButton onClick={onDone} color={C.gold}>C'est parti !</BigButton>
-    </div>
-  );
-}
-
-function JokerDrawInline({ room, onDone }) {
-  const enabledIds = Object.entries(room.settings.jokers || {}).filter(([, v]) => v).map(([k]) => k);
-  const jokerDefs = JOKERS.filter((j) => enabledIds.includes(j.id));
-  const [deck] = useState(() => {
-    const arr = jokerDefs.map((j, i) => ({ ...j, backColor: CARD_BACK_COLORS[i % CARD_BACK_COLORS.length] }));
-    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-    return arr;
-  });
-  const [flipped, setFlipped] = useState([]);
-  const count = Math.min(room.settings.jokerRandomCount || 2, deck.length);
-  const picked = flipped.map((i) => deck[i].id);
-  function flip(i) { if (flipped.includes(i) || flipped.length >= count) return; setFlipped((f) => [...f, i]); }
-  return (
-    <div className="p-2">
-      <p className="text-center mb-2" style={{ fontFamily: F.display, fontSize: 16, color: C.gold }}>Tire tes jokers 🎴</p>
-      <p className="text-[11px] opacity-70 mb-3 text-center">Choisis {count} carte{count > 1 ? "s" : ""} parmi {deck.length}</p>
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {deck.map((j, i) => {
-          const isFlipped = flipped.includes(i);
-          const Icon = j.icon;
-          return (
-            <button key={i} onClick={() => flip(i)} disabled={isFlipped || flipped.length >= count} className="rounded-lg aspect-square flex flex-col items-center justify-center gap-0.5" style={isFlipped ? { background: C.gold, border: `2px solid ${C.gold}` } : { background: `linear-gradient(135deg, ${j.backColor}, ${j.backColor}99)`, border: "2px solid rgba(255,255,255,0.25)" }}>
-              {isFlipped ? (<><Icon size={20} color="#1B1030" /><span style={{ fontFamily: F.display, fontSize: 10, color: "#1B1030", textAlign: "center", lineHeight: 1.1, padding: "0 2px" }}>{j.label}</span></>) : (<span style={{ fontSize: 18 }}>🃏</span>)}
-            </button>
-          );
-        })}
-      </div>
-      <BigButton onClick={() => onDone(picked)} color={C.gold} disabled={flipped.length < count}>Valider</BigButton>
-    </div>
-  );
-}
-
-function TestPlayerColumn({ label, room }) {
-  const [step, setStep] = useState("tuto");
-  const [picked, setPicked] = useState([]);
-  return (
-    <div className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.2)" }}>
-      <p className="text-xs uppercase opacity-50 mb-2 text-center">{label} — écran simulé</p>
-      {step === "tuto" && <JokerTutoInline room={room} onDone={() => setStep(room.settings.jokerRandom ? "draw" : "done")} />}
-      {step === "draw" && <JokerDrawInline room={room} onDone={(p) => { setPicked(p); setStep("done"); }} />}
-      {step === "done" && (
-        <div className="text-center p-4">
-          <p style={{ fontFamily: F.display, fontSize: 16, color: C.teal }}>Prêt à jouer ✅</p>
-          {picked.length > 0 && (
-            <div className="flex gap-2 justify-center flex-wrap mt-3">
-              {picked.map((id) => { const j = JOKERS.find((x) => x.id === id); return <span key={id} className="text-xs rounded-full px-3 py-1 flex items-center gap-1" style={{ background: C.gold, color: "#1B1030", fontWeight: 700 }}>{j.emoji} {j.label}</span>; })}
-            </div>
-          )}
-          <div className="mt-4"><GhostButton onClick={() => { setStep("tuto"); setPicked([]); }} small>Refaire le test</GhostButton></div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TestLab({ onBack }) {
-  const [jokerRandom, setJokerRandom] = useState(true);
-  const testRoom = { settings: { jokers: { "5050": true, x2: true, steal: true, block: true, speedchrono: true }, jokerRandom, jokerRandomCount: 2, seconds: 20 } };
-  return (
-    <Stage wide>
-      <ScreenHeader title="🧪 Espace test" onBack={onBack} color={C.violet} />
-      <p className="text-sm opacity-70 mb-4 text-center">Simule ce que verraient deux joueurs différents pendant le tuto et le tirage de jokers. Chaque colonne est indépendante — clique et teste librement.</p>
-      <div className="flex gap-2 justify-center mb-6">
-        <Chip active={jokerRandom} onClick={() => setJokerRandom(true)}>Avec tirage aléatoire</Chip>
-        <Chip active={!jokerRandom} onClick={() => setJokerRandom(false)}>Sans tirage (tous les jokers)</Chip>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <TestPlayerColumn key={`a-${jokerRandom}`} label="Joueur A" room={testRoom} />
-        <TestPlayerColumn key={`b-${jokerRandom}`} label="Joueur B" room={testRoom} />
-      </div>
-    </Stage>
-  );
-}
-
-/* ---------------------------------------------------------
    ROOT APP
 --------------------------------------------------------- */
 export default function QuizApp() {
@@ -2476,8 +2387,7 @@ export default function QuizApp() {
     setView(isAdmin ? "admin-lobby" : "player-lobby");
   }
 
-  if (view === "home") return <Home onCreate={() => setView("admin-create")} onJoin={() => setView("player-join")} onSolo={() => setView("solo-home")} onMatchAmor={() => setView("matchamor-create")} onTestLab={() => setView("testlab")} onBlindTest={() => setView("blindtest-create")} />;
-  if (view === "testlab") return <TestLab onBack={() => setView("home")} />;
+  if (view === "home") return <Home onCreate={() => setView("admin-create")} onJoin={() => setView("player-join")} onSolo={() => setView("solo-home")} onMatchAmor={() => setView("matchamor-create")} onBlindTest={() => setView("blindtest-create")} />;
   if (view === "solo-home") return <SoloHome onBack={() => setView("home")} onNormal={() => { setSoloMode("normal"); setView("solo-profile"); }} onCrash={() => { setSoloMode("crash"); setView("solo-profile"); }} />;
   if (view === "solo-profile") return <SoloProfile onBack={() => setView("solo-home")} onNext={(p) => { setSoloProfile(p); setView(soloMode === "crash" ? "crash-setup" : "solo-setup"); }} />;
   if (view === "solo-setup") return <SoloSetup onBack={() => setView("solo-profile")} onStart={(cfg) => { setSoloConfig(cfg); setView("solo-quiz"); }} />;
@@ -2535,7 +2445,7 @@ export default function QuizApp() {
     />
   );
 
-  if (view === "player-lobby" && profile) return <PlayerLobby profile={profile} code={code} />;
+  if (view === "player-lobby" && profile) return <PlayerLobby profile={profile} code={code} assignedJokers={assignedJokers} />;
 
   if (view === "admin-game" && room) return <AdminGame code={code} room={room} onRoomChange={(r) => setRoom(r)} onFinished={(r) => { setRoom(r); setView("results"); }} hostPid={pid} />;
   if (view === "player-game" && room) return <PlayerGame code={code} pid={pid} room={room} assignedJokers={assignedJokers} usedJokersEver={usedJokersEver} setUsedJokersEver={setUsedJokersEver} />;
