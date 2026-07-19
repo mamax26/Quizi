@@ -36,6 +36,42 @@ const F = { display: "'Baloo 2', system-ui, sans-serif", body: "'Nunito', system
 const C = { bg: "#180F2E", bg2: "#241645", pink: "#FF3D7F", gold: "#FFC93C", teal: "#2EE6D6", violet: "#7B4EFF", cream: "#FFF6E9" };
 
 /* ---------------------------------------------------------
+   ANIMATIONS DE FIN DE PARTIE (confettis / pluie d'emojis)
+--------------------------------------------------------- */
+function useFallingEmojiStyles() {
+  useEffect(() => {
+    const id = "quiz-falling-emoji-styles";
+    if (document.getElementById(id)) return;
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `@keyframes quizFall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0.85; } }`;
+    document.head.appendChild(style);
+  }, []);
+}
+function FallingEmojis({ emojis, count = 24, side }) {
+  useFallingEmojiStyles();
+  const [particles] = useState(() =>
+    Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: side === "left" ? Math.random() * 45 : side === "right" ? 55 + Math.random() * 45 : Math.random() * 100,
+      delay: Math.random() * 2.5,
+      duration: 3 + Math.random() * 2.5,
+      size: 18 + Math.random() * 20,
+      emoji: emojis[Math.floor(Math.random() * emojis.length)],
+    }))
+  );
+  return (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 50 }}>
+      {particles.map((p) => (
+        <span key={p.id} style={{ position: "absolute", left: `${p.left}%`, top: 0, fontSize: p.size, animation: `quizFall ${p.duration}s linear ${p.delay}s infinite` }}>
+          {p.emoji}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------
    STORAGE (Firebase Realtime Database, même schéma de clés qu'avant)
 --------------------------------------------------------- */
 async function sGet(key) {
@@ -1517,6 +1553,8 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
     const blockedDamage = {};
     answers.forEach((a) => { if (a.jokerUsed?.id === "block" && correctness[a.pid] && a.jokerUsed.targetId) { blockedDamage[a.jokerUsed.targetId] = gained[a.jokerUsed.targetId] || 0; gained[a.jokerUsed.targetId] = 0; } });
 
+    const netDelta = { ...gained };
+
     for (const p of players) { const prev = (await sGet(scoreKey(code, p.id))) || 0; await sSet(scoreKey(code, p.id), prev + (gained[p.id] || 0)); }
 
     for (const a of answers) {
@@ -1536,6 +1574,8 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       await sSet(killerKey(code, op.pid), prevKiller + steal);
       const prevVictim = (await sGet(victimKey(code, op.jokerUsed.targetId))) || 0;
       await sSet(victimKey(code, op.jokerUsed.targetId), prevVictim + steal);
+      netDelta[op.pid] = (netDelta[op.pid] || 0) + steal;
+      netDelta[op.jokerUsed.targetId] = (netDelta[op.jokerUsed.targetId] || 0) - steal;
     }
     for (const [targetId, dmg] of Object.entries(blockedDamage)) {
       if (dmg > 0) { const prevVictim = (await sGet(victimKey(code, targetId))) || 0; await sSet(victimKey(code, targetId), prevVictim + dmg); }
@@ -1543,7 +1583,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
 
     const withPlayers = answers.map((a) => {
       const p = players.find((pp) => pp.id === a.pid);
-      return { ...a, pseudo: p?.pseudo || "?", animal: p?.animal || "❓", correct: correctness[a.pid] };
+      return { ...a, pseudo: p?.pseudo || "?", animal: p?.animal || "❓", correct: correctness[a.pid], points: netDelta[a.pid] || 0 };
     });
     setPlayerAnswers(withPlayers);
     const withScores = await Promise.all(players.map(async (p) => ({ ...p, score: (await sGet(scoreKey(code, p.id))) || 0 })));
@@ -1626,6 +1666,7 @@ function AdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
                 <span>{a.animal}</span>
                 <span className="flex-1">{a.pseudo}</span>
                 <span style={{ color: a.correct ? C.teal : C.pink, fontWeight: 700 }}>{answerLabel(a)}</span>
+                <span style={{ fontFamily: F.mono, fontSize: 13, color: a.points > 0 ? C.teal : a.points < 0 ? C.pink : "rgba(255,255,255,0.4)", minWidth: 54, textAlign: "right" }}>{a.points > 0 ? `+${a.points}` : a.points} pts</span>
                 {a.correct ? <Check size={16} color={C.teal} /> : <span style={{ color: C.pink }}>✕</span>}
               </div>
             ))}
@@ -1726,7 +1767,7 @@ function PlayerGame({ code, pid, room, assignedJokers, usedJokersEver, setUsedJo
     if (id === "5050" && q.type === "qcm") { const wrongIdx = q.options.map((_, i) => i).filter((i) => i !== q.answer); setHiddenOptions(wrongIdx.sort(() => Math.random() - 0.5).slice(0, 2)); }
   }
 
-  const enabledJokers = JOKERS.filter((j) => assignedJokers.includes(j.id) && !usedJokersEver.includes(j.id));
+  const enabledJokers = JOKERS.filter((j) => assignedJokers.includes(j.id) && !usedJokersEver.includes(j.id) && (j.id !== "5050" || q.type === "qcm"));
 
   return (
     <Stage>
@@ -1803,13 +1844,13 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
           {topKiller?.killer > 0 && (
             <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: "rgba(255,61,127,0.12)" }}>
               <span style={{ fontSize: 26 }}>🔪</span>
-              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.pink }}>Serial Killer</p><p className="text-xs opacity-70">{topKiller.animal} {topKiller.pseudo} — {topKiller.killer} pts volés aux autres</p></div>
+              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.pink, textTransform: "uppercase" }}>Serial Killeur</p><p className="text-xs opacity-70">{topKiller.animal} {topKiller.pseudo} — {topKiller.killer} pts volés aux autres</p></div>
             </div>
           )}
           {topVictim?.victim > 0 && (
             <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: "rgba(123,78,255,0.12)" }}>
               <span style={{ fontSize: 26 }}>💀</span>
-              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.violet }}>Victime</p><p className="text-xs opacity-70">{topVictim.animal} {topVictim.pseudo} — {topVictim.victim} pts subis</p></div>
+              <div className="flex-1"><p style={{ fontFamily: F.display, fontSize: 16, color: C.violet, textTransform: "uppercase" }}>Victimos</p><p className="text-xs opacity-70">{topVictim.animal} {topVictim.pseudo} — {topVictim.victim} pts subis</p></div>
             </div>
           )}
         </div>
@@ -1823,6 +1864,8 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
     const teamList = Object.values(teams).sort((a, b) => b.score - a.score);
     return (
       <Stage>
+        {teamList.length > 0 && <FallingEmojis emojis={["🎉", "🎊", "✨", "🥳"]} side="left" count={20} />}
+        {teamList.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
         <Logo />
         <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement par équipe</h2>
         <div className="flex flex-col gap-3">
@@ -1841,6 +1884,8 @@ function Results({ code, room, isAdmin, onRestart, onPlayAgain }) {
 
   return (
     <Stage>
+      {ranking.length > 0 && <FallingEmojis emojis={["🎉", "🎊", "✨", "🥳"]} side="left" count={20} />}
+      {ranking.length > 1 && <FallingEmojis emojis={["💩"]} side="right" count={16} />}
       <Logo />
       <h2 className="text-center mb-6" style={{ fontFamily: F.display, fontSize: 26, color: C.gold }}><Trophy className="inline mb-1 mr-2" /> Classement final</h2>
       <div className="flex flex-col gap-3">
@@ -2190,6 +2235,7 @@ function BlindTestAdminGame({ code, room, onRoomChange, onFinished }) {
     const answers = (await Promise.all(answerKeys.map((k) => sGet(k)))).filter(Boolean);
     const playerKeys = await sList(`qz:${code}:player:`);
     const players = (await Promise.all(playerKeys.map((k) => sGet(k)))).filter(Boolean);
+    const pointsByPid = {};
     for (const a of answers) {
       const correct = a.value === correctValue;
       let pts = 0;
@@ -2198,10 +2244,11 @@ function BlindTestAdminGame({ code, room, onRoomChange, onFinished }) {
         const remaining = Math.max(0, room.settings.seconds - elapsed);
         pts = Math.round(50 + 50 * (room.settings.seconds > 0 ? remaining / room.settings.seconds : 0));
       }
+      pointsByPid[a.pid] = pts;
       const prev = (await sGet(scoreKey(code, a.pid))) || 0;
       await sSet(scoreKey(code, a.pid), prev + pts);
     }
-    const withPlayers = answers.map((a) => { const p = players.find((pp) => pp.id === a.pid); return { ...a, pseudo: p?.pseudo || "?", animal: p?.animal || "❓", correct: a.value === correctValue }; });
+    const withPlayers = answers.map((a) => { const p = players.find((pp) => pp.id === a.pid); return { ...a, pseudo: p?.pseudo || "?", animal: p?.animal || "❓", correct: a.value === correctValue, points: pointsByPid[a.pid] || 0 }; });
     setPlayerAnswers(withPlayers);
     const withScores = await Promise.all(players.map(async (p) => ({ ...p, score: (await sGet(scoreKey(code, p.id))) || 0 })));
     withScores.sort((a, b) => b.score - a.score);
@@ -2255,6 +2302,7 @@ function BlindTestAdminGame({ code, room, onRoomChange, onFinished }) {
                 <span>{a.animal}</span>
                 <span className="flex-1">{a.pseudo}</span>
                 <span style={{ color: a.correct ? C.teal : C.pink, fontWeight: 700 }}>{a.value}</span>
+                <span style={{ fontFamily: F.mono, fontSize: 13, color: a.points > 0 ? C.teal : "rgba(255,255,255,0.4)", minWidth: 54, textAlign: "right" }}>{a.points > 0 ? `+${a.points}` : a.points} pts</span>
                 {a.correct ? <Check size={16} color={C.teal} /> : <span style={{ color: C.pink }}>✕</span>}
               </div>
             ))}
