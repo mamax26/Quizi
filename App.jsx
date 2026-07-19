@@ -2340,6 +2340,8 @@ export default function QuizApp() {
   const [assignedJokers, setAssignedJokers] = useState([]);
   const [urlCode, setUrlCode] = useState(null);
   const isAdmin = view.startsWith("admin");
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2359,7 +2361,10 @@ export default function QuizApp() {
         const isBlindTest = r.mode === "blindtest";
         if (r.phase === "question") setView(isAdmin ? (isMatchAmor ? "admin-matchamor" : isBlindTest ? "admin-blindgame" : "admin-game") : (isMatchAmor ? "player-matchamor" : isBlindTest ? "player-blindgame" : "player-game"));
         else if (r.phase === "results") setView(isMatchAmor ? "results-matchamor" : "results");
-        else if (r.phase === "lobby") setView(isAdmin ? "admin-lobby" : "player-lobby");
+        else if (r.phase === "lobby") {
+          const stillOnboarding = !isAdmin && (viewRef.current === "player-tuto" || viewRef.current === "player-jokerdraw");
+          if (!stillOnboarding) setView(isAdmin ? "admin-lobby" : "player-lobby");
+        }
       }
     };
     poll();
