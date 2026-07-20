@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, createContext, useContext } from "react";
 import { Users, Crown, Zap, Shield, Swords, Percent, EyeOff, Sparkles, Play, Copy, Check, ArrowRight, Trophy, Clock, Plus, Minus, MapPin, RefreshCw, Skull, Heart, Cast, Info, BarChart3, Hourglass } from "lucide-react";
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set as fbSet, query, orderByKey, startAt, endAt } from "firebase/database";
@@ -736,7 +736,7 @@ const MAP_ZONES = [
 --------------------------------------------------------- */
 const QB = {
   animaux: [
-    { type: "qcm", text: "Combien de cœurs a une pieuvre ?", options: ["1", "2", "3", "9"], answer: 3 },
+    { type: "qcm", text: "Combien de cœurs a une pieuvre ?", options: ["1", "2", "3", "9"], answer: 2 },
     { type: "vf", text: "Les autruches meurent en mettant la tête sous l'eau par peur.", answer: false },
     { type: "qcm", text: "Quel animal dort le plus longtemps par jour ?", options: ["Le koala", "Le paresseux", "Le chat", "La chauve-souris"], answer: 3 },
     { type: "echelle", text: "Combien de mois un escargot peut-il hiberner ?", answer: 3, unit: "mois" },
@@ -881,7 +881,7 @@ const QB = {
     { type: "qcm", text: "Dans quel film Disney trouve-t-on le personnage de Baloo ?", options: ["Le Livre de la Jungle", "Robin des Bois", "Tarzan", "Frère des Ours"], answer: 0 },
     { type: "vf", text: "Mulan rejoint l'armée sous sa véritable identité, sans se déguiser.", answer: false },
     { type: "echelle", text: "Combien de films Disney classiques (canon officiel) existaient environ en 2020 ?", answer: 58, unit: "films (≈)" },
-    { type: "qcm", text: "Quel est le nom du crabe conseiller du roi Triton ?", options: ["Sébastien", "Flounder", "Ariel", "Ursula"], answer: 0 },
+    { type: "qcm", text: "Quel est le nom de la lampe magique où vit le Génie dans 'Aladdin' ?", options: ["Une théière", "Une lampe à huile", "Un vase", "Un chandelier"], answer: 1 },
     { type: "vf", text: "Le château emblématique du logo Disney est inspiré du château de Neuschwanstein en Allemagne.", answer: true },
     { type: "qcm", text: "Quel est le prénom de la mère porteuse de Bambi ?", options: ["Faline", "Aucun, elle meurt sans être nommée", "Fleur", "Douce"], answer: 1 },
   ],
@@ -3120,7 +3120,7 @@ const FALLBACK_ORIGINS = ["France", "États-Unis", "Royaume-Uni", "Belgique", "C
 function BlindTestAdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
   const { t: tr } = useLang();
   const track = room.tracks[room.currentIndex];
-  const [questionKind] = useState(() => {
+  const questionKind = useMemo(() => {
     const types = room.settings.questionTypes;
     const valid = types.filter((t) => {
       if (t === "annee") return !!track.releaseYear;
@@ -3129,7 +3129,7 @@ function BlindTestAdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
     });
     const pool = valid.length > 0 ? valid : ["titre"];
     return pool[Math.floor(Math.random() * pool.length)];
-  });
+  }, [room.currentIndex, track]);
   const left = useCountdown(room.questionStartedAt, room.settings.seconds);
   const [answersCount, setAnswersCount] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -3170,6 +3170,16 @@ function BlindTestAdminGame({ code, room, onRoomChange, onFinished, hostPid }) {
       pool = [...origins, ...FALLBACK_ORIGINS.filter((o) => o !== track.artistOrigin)];
     }
     const uniquePool = [...new Set(pool)].filter((v) => v !== correctValue);
+    let fillerN = 0;
+    while (uniquePool.length < 3) {
+      fillerN += 1;
+      const filler =
+        questionKind === "annee" ? String(Number(correctValue) + fillerN * 3) :
+        questionKind === "origine" ? FALLBACK_ORIGINS[fillerN % FALLBACK_ORIGINS.length] :
+        questionKind === "artiste" ? `Artiste mystère ${fillerN}` :
+        `Titre mystère ${fillerN}`;
+      if (!uniquePool.includes(filler) && filler !== correctValue) uniquePool.push(filler);
+    }
     const distractors = uniquePool.sort(() => Math.random() - 0.5).slice(0, 3);
     const opts = [...distractors, correctValue].sort(() => Math.random() - 0.5);
     setOptions(opts);
