@@ -1506,7 +1506,7 @@ function GhostButton({ children, onClick, small }) {
 }
 function Chip({ children, active, onClick, disabled }) {
   return (
-    <button onClick={onClick} disabled={disabled} className="rounded-full px-4 py-2 text-sm font-bold transition-all disabled:opacity-30 text-left w-full whitespace-nowrap overflow-hidden text-ellipsis block" style={{ fontFamily: F.body, background: active ? C.gold : "rgba(255,255,255,0.08)", color: active ? "#1B1030" : C.cream, border: `2px solid ${active ? C.gold : "rgba(255,255,255,0.2)"}` }}>
+    <button onClick={onClick} disabled={disabled} className="rounded-full px-4 py-2 text-sm font-bold transition-all disabled:opacity-30 text-left whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontFamily: F.body, background: active ? C.gold : "rgba(255,255,255,0.08)", color: active ? "#1B1030" : C.cream, border: `2px solid ${active ? C.gold : "rgba(255,255,255,0.2)"}` }}>
       {children}
     </button>
   );
@@ -1883,9 +1883,9 @@ function CreateRoom({ onCreated, onBack }) {
         </div>
       </div>
       <p className="text-sm opacity-70 mb-2 font-bold">{tr("teamsModeLabel")}</p>
-      <div className="flex gap-2 mb-6">{[1, 2, 3, 4].map((n) => (<Chip key={n} active={teamsMode === n} onClick={() => setTeamsMode(n)}>{n === 1 ? tr("soloForAll") : `${n} ${tr("teamsCount")}`}</Chip>))}</div>
+      <div className="grid grid-cols-2 gap-2 mb-6">{[1, 2, 3, 4].map((n) => (<Chip key={n} active={teamsMode === n} onClick={() => setTeamsMode(n)}>{n === 1 ? tr("soloForAll") : `${n} ${tr("teamsCount")}`}</Chip>))}</div>
       <p className="text-sm opacity-70 mb-2 font-bold">{tr("jokersEnabledLabel")}</p>
-      <div className="flex flex-wrap gap-2 mb-6">{JOKERS.map((j) => (<Chip key={j.id} active={jokers[j.id]} onClick={() => toggleJoker(j.id)}>{jokerLabel(j, lang)}</Chip>))}</div>
+      <div className="grid grid-cols-2 gap-2 mb-6">{JOKERS.map((j) => (<Chip key={j.id} active={jokers[j.id]} onClick={() => toggleJoker(j.id)}>{jokerLabel(j, lang)}</Chip>))}</div>
 
       <p className="text-sm opacity-70 mb-2 font-bold">{tr("jokerAttribLabel")}</p>
       <div className="flex flex-wrap gap-2 mb-3">
