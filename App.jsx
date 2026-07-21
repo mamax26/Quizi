@@ -1488,7 +1488,7 @@ function SettingSection({ number, icon, title, color, children }) {
     <div className="rounded-2xl p-4 mb-4" style={{ background: "rgba(255,255,255,0.04)", borderTop: "1px solid rgba(255,255,255,0.08)", borderRight: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", borderLeft: `4px solid ${color}` }}>
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center justify-center rounded-full flex-shrink-0" style={{ width: 24, height: 24, background: color, color: "#1B1030", fontFamily: F.display, fontSize: 13, fontWeight: 800 }}>{number}</div>
-        <p style={{ fontFamily: F.display, fontSize: 16, color }}>{icon} {title}</p>
+        <p style={{ fontFamily: F.display, fontSize: 16, color }}>{title}</p>
       </div>
       {children}
     </div>
