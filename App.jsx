@@ -81,10 +81,10 @@ const STRINGS = {
     echelleLabel: "Réponse chiffrée",
     nbQuestionsLabel: "Nombre de questions",
     secondsPerQuestionLabel: "Secondes par question",
-    teamsModeLabel: "Mode équipes (composées par toi, l'hôte, dans le salon)",
+    teamsModeLabel: "Mode équipes",
     soloForAll: "Chacun pour soi",
     teamsCount: "équipes",
-    jokersEnabledLabel: "Jokers activés (1 fois par partie chacun, 1 joker max par question)",
+    jokersEnabledLabel: "Jokers activés",
     jokerAttribLabel: "Attribution des jokers",
     jokerManual: "Les joueurs choisissent eux-mêmes",
     jokerRandomLabel: "Attribution aléatoire 🎴",
@@ -283,9 +283,9 @@ const STRINGS = {
     j_bouclier_label: "Bouclier", j_bouclier_desc: "Te protège d'un Vol de points ou d'un Blocage pendant cette question.",
     j_sondage_label: "Sondage", j_sondage_desc: "Affiche en direct le pourcentage de joueurs ayant choisi chaque réponse (QCM uniquement).",
     j_voleurtemps_label: "Voleur du Temps", j_voleurtemps_desc: "Vole 3 secondes à TOUS les autres joueurs sur cette question — le temps volé t'est intégralement reversé.",
-    cat_animaux: "Animaux", cat_geo: "Géographie", cat_sport: "Sport", cat_films: "Films & Séries", cat_records: "Records inutiles",
+    cat_animaux: "Animaux", cat_geo: "Géographie", cat_sport: "Sport", cat_films: "Films & Séries", cat_records: "Records",
     cat_disney: "Disney", cat_bouffe: "Alimentation", cat_logique: "Logique", cat_jv: "Jeux vidéo", cat_actu: "Ça a fait l'actu",
-    cat_ortho: "Orthographe", cat_annees2000: "Années 2000", cat_musique: "Culture Musicale", cat_adulte18: "Ambiance -18",
+    cat_ortho: "Orthographe", cat_annees2000: "Années 2000", cat_musique: "Musique", cat_adulte18: "Ambiance -18",
     kcat_animaux: "Animaux", kcat_nature: "Sciences & Nature", kcat_contes: "Contes & Dessins animés", kcat_sport: "Sport", kcat_geo: "Géo Facile", kcat_logique: "Logique Enfant",
   },
   en: {
@@ -338,10 +338,10 @@ const STRINGS = {
     echelleLabel: "Numeric answer",
     nbQuestionsLabel: "Number of questions",
     secondsPerQuestionLabel: "Seconds per question",
-    teamsModeLabel: "Team mode (set up by you, the host, in the lobby)",
+    teamsModeLabel: "Team mode",
     soloForAll: "Everyone for themselves",
     teamsCount: "teams",
-    jokersEnabledLabel: "Enabled jokers (once per game each, 1 joker max per question)",
+    jokersEnabledLabel: "Enabled jokers",
     jokerAttribLabel: "Joker assignment",
     jokerManual: "Players choose their own",
     jokerRandomLabel: "Random assignment 🎴",
@@ -540,9 +540,9 @@ const STRINGS = {
     j_bouclier_label: "Shield", j_bouclier_desc: "Protects you from a Point Steal or Block on this question.",
     j_sondage_label: "Poll", j_sondage_desc: "Shows live the percentage of players who picked each answer (multiple choice only).",
     j_voleurtemps_label: "Time Thief", j_voleurtemps_desc: "Steals 3 seconds from ALL other players on this question — the stolen time is fully credited to you.",
-    cat_animaux: "Animals", cat_geo: "Geography", cat_sport: "Sports", cat_films: "Movies & TV Shows", cat_records: "Pointless Records",
+    cat_animaux: "Animals", cat_geo: "Geography", cat_sport: "Sports", cat_films: "Movies & TV Shows", cat_records: "Records",
     cat_disney: "Disney", cat_bouffe: "Food", cat_logique: "Logic", cat_jv: "Video Games", cat_actu: "In the News",
-    cat_ortho: "Spelling", cat_annees2000: "2000s", cat_musique: "Music Culture", cat_adulte18: "18+ Vibes",
+    cat_ortho: "Spelling", cat_annees2000: "2000s", cat_musique: "Music", cat_adulte18: "18+ Vibes",
     kcat_animaux: "Animals", kcat_nature: "Science & Nature", kcat_contes: "Tales & Cartoons", kcat_sport: "Sports", kcat_geo: "Easy Geography", kcat_logique: "Kids Logic",
   },
 };
@@ -813,14 +813,21 @@ const debuffKeyPrefix = (code, qIdx, targetId) => `qz:${code}:debuff:${qIdx}:${t
 const ANIMALS = ["🦊", "🐼", "🦁", "🐸", "🦄", "🐙", "🦥", "🐺", "🦉", "🐷", "🦖", "🐨", "🦩", "🐵", "🦔", "🐧", "🐯", "🦈", "🐻", "🦫"];
 
 const FUN_PSEUDOS = [
-  "Macron for sure", "Hollande en scoot", "Killian M'raté", "Le J c'est le S", "Tata Monique",
-  "La Mélanch", "Jeaaaaaaanne", "Molusquo", "Patoch'", "La licorne dorée",
-  "Pascal au bistrot", "Habile, Bill", "Zézette épouse X", "Juste Leblanc", "Jacquouille",
-  "Chirac en slibar", "Cathy d'la compta", "Lenny Chon", "Couscous royal", "La moulaga",
-  "Dalida en crocs", "Ciaaaaao bambino", "Lenny Bar", "Vegan sanguinaires", "Claquettes chausettes",
-  "Pizza ananas", "Carlos big bisous", "Amandine du 38", "Tibo In Shnek",
+  "Rougail saucisses", "Destructor", "Le boss", "Dieu", "C'est moi",
+  "Le buffle", "Quoicoubeh", "Xptdr", "Roule ma poule", "Oasis is good",
+  "Gronaldo", "Minimoys", "Ketchup mayo", "Tonton Hervé", "For sure",
+  "Hollande en scoot", "Killian M'raté", "Le J c'est le S", "Tata Monique", "La Mélanch'",
+  "La larve", "Le Patoch'", "La licorne dorée", "Pascal au bistrot", "Zézette épouse X",
+  "Jacquouille", "Chirac en slibar", "Cathy d'la compta", "Lenny Chon", "Couscous royal",
+  "La moulaga", "Dalida en crocs", "Ciao bambino", "Lenny Bar", "Vegan enragé",
+  "Pizza ananas", "Carlos big bisous", "Amandine du 38", "Tibo In Shnek", "Chérie coco",
+  "Femme des îles",
 ];
-function funPseudo() { return FUN_PSEUDOS[Math.floor(Math.random() * FUN_PSEUDOS.length)]; }
+function funPseudo(exclude) {
+  if (!exclude || FUN_PSEUDOS.length <= 1) return FUN_PSEUDOS[Math.floor(Math.random() * FUN_PSEUDOS.length)];
+  const pool = FUN_PSEUDOS.filter((p) => p !== exclude);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 /* ---------------------------------------------------------
    CATEGORIES
@@ -1483,14 +1490,48 @@ function ScreenHeader({ title, onBack, color = C.gold }) {
     </div>
   );
 }
-function SettingSection({ number, icon, title, color, children }) {
+function SettingSection({ number, title, color, children, onInfoClick }) {
   return (
     <div className="rounded-2xl p-4 mb-4" style={{ background: "rgba(255,255,255,0.04)", borderTop: "1px solid rgba(255,255,255,0.08)", borderRight: "1px solid rgba(255,255,255,0.08)", borderBottom: "1px solid rgba(255,255,255,0.08)", borderLeft: `4px solid ${color}` }}>
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center justify-center rounded-full flex-shrink-0" style={{ width: 24, height: 24, background: color, color: "#1B1030", fontFamily: F.display, fontSize: 13, fontWeight: 800 }}>{number}</div>
-        <p style={{ fontFamily: F.display, fontSize: 16, color }}>{title}</p>
+        <p className="flex-1" style={{ fontFamily: F.display, fontSize: 19, color, textTransform: "uppercase", letterSpacing: 0.5 }}>{title}</p>
+        {onInfoClick && (
+          <button onClick={onInfoClick} className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 24, height: 24, background: "rgba(255,255,255,0.1)" }}>
+            <Info size={14} color={color} />
+          </button>
+        )}
       </div>
       {children}
+    </div>
+  );
+}
+function JokerInfoModal({ onClose }) {
+  const { lang, t: tr } = useLang();
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 100, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="rounded-t-3xl p-5" style={{ background: C.bg2, width: "100%", maxWidth: 480, maxHeight: "80vh", overflowY: "auto" }}>
+        <div className="flex items-center justify-between mb-4">
+          <p style={{ fontFamily: F.display, fontSize: 20, color: C.gold }}>{tr("jokersEnabledLabel")}</p>
+          <button onClick={onClose} className="rounded-full p-2" style={{ background: "rgba(255,255,255,0.1)" }}><X size={18} color={C.cream} /></button>
+        </div>
+        <div className="flex flex-col gap-3 pb-4">
+          {JOKERS.map((j) => {
+            const Icon = j.icon;
+            return (
+              <div key={j.id} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "rgba(255,255,255,0.06)" }}>
+                <div className="rounded-full flex items-center justify-center flex-shrink-0" style={{ width: 40, height: 40, background: "rgba(255,255,255,0.1)" }}>
+                  <Icon size={20} color={C.gold} />
+                </div>
+                <div>
+                  <p style={{ fontFamily: F.display, fontSize: 16, color: C.gold }}>{jokerLabel(j, lang)}</p>
+                  <p className="text-xs opacity-80">{jokerDesc(j, lang)}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1618,7 +1659,7 @@ function SoloProfile({ onBack, onNext }) {
       <AvatarPicker animal={animal} onPick={setAnimal} taken={[]} />
       <div className="flex gap-2 mb-2 mt-4">
         <input value={pseudo} onChange={(e) => setPseudo(e.target.value)} placeholder={tr("pseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid rgba(255,255,255,0.15)` }} />
-        <button onClick={() => setPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+        <button onClick={() => setPseudo(funPseudo(pseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
       </div>
       <p className="text-xs opacity-60 mb-4">{tr("pseudoGenHint")}</p>
       {error && <p className="text-sm mb-3 text-center" style={{ color: C.pink }}>{error}</p>}
@@ -1662,11 +1703,11 @@ function SoloSetup({ onBack, onStart, crash }) {
   );
 }
 
-function QuestionInput({ q, onSubmit, scaleVal, setScaleVal }) {
+function QuestionInput({ q, onSubmit, scaleVal, setScaleVal, hiddenOptions }) {
   const { t: tr } = useLang();
   if (q.type === "qcm") return (
     <div className="grid grid-cols-1 gap-3">
-      {q.options.map((o, i) => (<button key={i} onClick={() => onSubmit(i)} className="rounded-xl py-3 px-4 text-left" style={{ background: "rgba(255,255,255,0.08)", fontFamily: F.body, fontWeight: 700, color: C.cream, fontSize: 17 }}>{o}</button>))}
+      {q.options.map((o, i) => (hiddenOptions || []).includes(i) ? null : (<button key={i} onClick={() => onSubmit(i)} className="rounded-xl py-3 px-4 text-left" style={{ background: "rgba(255,255,255,0.08)", fontFamily: F.body, fontWeight: 700, color: C.cream, fontSize: 17 }}>{o}</button>))}
     </div>
   );
   if (q.type === "vf") return (
@@ -1752,7 +1793,9 @@ function SoloQuiz({ config, profile, onExit }) {
       ) : (
         <div className="text-center">
           <p style={{ fontFamily: F.display, fontSize: 22, color: wasCorrect ? C.teal : C.pink }}>{wasCorrect ? tr("correctAnswerMsg") : tr("wrongAnswerMsg")}</p>
-          {q.type === "echelle" && <p className="text-sm opacity-70 mt-1">{tr("answerColonLabel")} {q.answer} {q.unit || ""}</p>}
+          <p className="text-sm opacity-70 mt-1">
+            {tr("answerColonLabel")} {q.type === "qcm" ? q.options[q.answer] : q.type === "vf" ? (q.answer ? tr("trueLabel") : tr("falseLabel")) : q.type === "carte" ? MAP_ZONES.find((z) => z.id === q.answer)?.label : `${q.answer} ${q.unit || ""}`}
+          </p>
           <div className="mt-4"><BigButton onClick={() => { setAnswered(false); setScaleVal(0); setStartedAt(Date.now()); setIdx((i) => i + 1); }} color={C.gold} icon={ArrowRight}>{tr("nextBtn")}</BigButton></div>
         </div>
       )}
@@ -1769,7 +1812,16 @@ function CrashTest({ config, profile, onExit }) {
   const [answered, setAnswered] = useState(false);
   const [wasCorrect, setWasCorrect] = useState(false);
   const [scaleVal, setScaleVal] = useState(0);
+  const [used5050, setUsed5050] = useState(false);
+  const [hiddenOptions, setHiddenOptions] = useState([]);
   const q = pool[idx % pool.length];
+
+  function use5050() {
+    if (used5050 || q.type !== "qcm") return;
+    setUsed5050(true);
+    const wrongIdx = q.options.map((_, i) => i).filter((i) => i !== q.answer);
+    setHiddenOptions(wrongIdx.sort(() => Math.random() - 0.5).slice(0, 2));
+  }
 
   function checkAnswer(value) {
     let correct = false;
@@ -1799,12 +1851,22 @@ function CrashTest({ config, profile, onExit }) {
         <>
           <div className="rounded-2xl p-5 mb-5" style={{ background: "rgba(255,255,255,0.06)" }}><p className="uppercase tracking-widest mb-2" style={{ fontSize: 16, fontWeight: 800, color: C.gold }}>{findCategory(q.category)?.emoji} {(() => { const c = findCategory(q.category); return c ? (c.id.startsWith("k_") ? kidsCategoryLabel(c, lang) : categoryLabel(c, lang)) : ""; })()}</p><p style={{ fontFamily: F.display, fontSize: 26 }}>{q.text}</p></div>
           {!answered ? (
-            <QuestionInput q={q} onSubmit={checkAnswer} scaleVal={scaleVal} setScaleVal={setScaleVal} />
+            <>
+              <QuestionInput q={q} onSubmit={checkAnswer} scaleVal={scaleVal} setScaleVal={setScaleVal} hiddenOptions={hiddenOptions} />
+              {q.type === "qcm" && !used5050 && (
+                <button onClick={use5050} className="mt-3 rounded-xl px-4 py-2 flex items-center gap-2 mx-auto" style={{ background: "rgba(255,255,255,0.08)", border: "2px solid rgba(255,255,255,0.15)" }}>
+                  <Percent size={16} color={C.gold} />
+                  <span style={{ fontFamily: F.display, fontSize: 14, color: C.gold }}>50/50</span>
+                </button>
+              )}
+            </>
           ) : (
             <div className="text-center">
               <p style={{ fontFamily: F.display, fontSize: 22, color: wasCorrect ? C.teal : C.pink }}>{wasCorrect ? tr("correctAnswerMsg") : tr("wrongAnswerCrashMsg")}</p>
-              {q.type === "echelle" && <p className="text-sm opacity-70 mt-1">{tr("answerColonLabel")} {q.answer} {q.unit || ""}</p>}
-              <div className="mt-4"><BigButton onClick={() => { setAnswered(false); setScaleVal(0); setIdx((i) => i + 1); }} color={C.gold} icon={ArrowRight}>{tr("nextBtn")}</BigButton></div>
+              <p className="text-sm opacity-70 mt-1">
+                {tr("answerColonLabel")} {q.type === "qcm" ? q.options[q.answer] : q.type === "vf" ? (q.answer ? tr("trueLabel") : tr("falseLabel")) : q.type === "carte" ? MAP_ZONES.find((z) => z.id === q.answer)?.label : `${q.answer} ${q.unit || ""}`}
+              </p>
+              <div className="mt-4"><BigButton onClick={() => { setAnswered(false); setScaleVal(0); setHiddenOptions([]); setIdx((i) => i + 1); }} color={C.gold} icon={ArrowRight}>{tr("nextBtn")}</BigButton></div>
             </div>
           )}
         </>
@@ -1845,6 +1907,7 @@ function CreateRoom({ onCreated, onBack }) {
   const [hostPlays, setHostPlays] = useState(false);
   const [hostAnimal, setHostAnimal] = useState(null);
   const [hostPseudo, setHostPseudo] = useState("");
+  const [showJokerInfo, setShowJokerInfo] = useState(false);
   function toggleJoker(j) { setJokers((s) => ({ ...s, [j]: !s[j] })); }
 
   async function create() {
@@ -1906,9 +1969,10 @@ function CreateRoom({ onCreated, onBack }) {
         <div className="grid grid-cols-2 gap-2">{[1, 2, 3, 4].map((n) => (<Chip key={n} active={teamsMode === n} onClick={() => setTeamsMode(n)}>{n === 1 ? tr("soloForAll") : `${n} ${tr("teamsCount")}`}</Chip>))}</div>
       </SettingSection>
 
-      <SettingSection number={4} icon="🃏" title={tr("jokersEnabledLabel")} color={C.pink}>
+      <SettingSection number={4} title={tr("jokersEnabledLabel")} color={C.pink} onInfoClick={() => setShowJokerInfo(true)}>
         <div className="grid grid-cols-2 gap-2">{JOKERS.map((j) => (<Chip key={j.id} active={jokers[j.id]} onClick={() => toggleJoker(j.id)}>{jokerLabel(j, lang)}</Chip>))}</div>
       </SettingSection>
+      {showJokerInfo && <JokerInfoModal onClose={() => setShowJokerInfo(false)} />}
 
       <SettingSection number={5} icon="🎲" title={tr("jokerAttribLabel")} color={C.mint}>
         <div className="flex flex-wrap gap-2 mb-3">
@@ -1924,13 +1988,13 @@ function CreateRoom({ onCreated, onBack }) {
         </div>
       </SettingSection>
 
-      <SettingSection number={6} icon="⚠️" title={tr("malusLabel")} color={C.orange}>
-        <div className="flex flex-wrap gap-2">
+      <SettingSection number={6} title={tr("malusLabel")} color={C.orange}>
+        <div className="grid grid-cols-2 gap-2">
           {[0, -25, -50, -100].map((m) => (<Chip key={m} active={malus === m} onClick={() => setMalus(m)}>{m === 0 ? tr("malusNone") : `${m} pts`}</Chip>))}
         </div>
       </SettingSection>
 
-      <SettingSection number={7} icon="🎤" title={tr("hostPlaysLabel")} color={C.teal}>
+      <SettingSection number={7} title={tr("hostPlaysLabel")} color={C.teal}>
         <div className="flex flex-wrap gap-2 mb-3">
           <Chip active={!hostPlays} onClick={() => setHostPlays(false)}>{tr("hostPlaysNo")}</Chip>
           <Chip active={hostPlays} onClick={() => setHostPlays(true)}>{tr("hostPlaysYes")}</Chip>
@@ -1940,7 +2004,7 @@ function CreateRoom({ onCreated, onBack }) {
             <p className="text-xs opacity-60 mb-2">{tr("hostPlaysWarning")}</p>
             <div className="flex gap-2 mb-3">
               <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder={tr("hostPseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
-              <button onClick={() => setHostPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+              <button onClick={() => setHostPseudo(funPseudo(hostPseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
             </div>
             <AvatarPicker animal={hostAnimal} onPick={setHostAnimal} taken={[]} />
           </div>
@@ -2046,7 +2110,7 @@ function JoinRoom({ onJoined, onBack, initialCode }) {
       <ScreenHeader title={tr("yourPseudoTitle")} onBack={() => setStep("code")} color={C.teal} />
       <div className="flex gap-2 mb-2">
         <input value={pseudo} onChange={(e) => setPseudo(e.target.value)} placeholder={tr("pseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: `2px solid rgba(255,255,255,0.15)` }} />
-        <button onClick={() => setPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+        <button onClick={() => setPseudo(funPseudo(pseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
       </div>
       <p className="text-xs opacity-60 mb-4">{tr("pseudoHint")}</p>
       {error && <p className="text-sm mb-3" style={{ color: C.pink }}>{error}</p>}
@@ -3050,7 +3114,7 @@ function CreateMatchAmor({ onCreated, onBack }) {
           <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.05)" }}>
             <div className="flex gap-2 mb-3">
               <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder={tr("hostPseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
-              <button onClick={() => setHostPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+              <button onClick={() => setHostPseudo(funPseudo(hostPseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
             </div>
             <AvatarPicker animal={hostAnimal} onPick={setHostAnimal} taken={[]} />
           </div>
@@ -3308,7 +3372,7 @@ function CreateBlindTest({ onCreated, onBack }) {
           <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.05)" }}>
             <div className="flex gap-2 mb-3">
               <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder={tr("hostPseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
-              <button onClick={() => setHostPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+              <button onClick={() => setHostPseudo(funPseudo(hostPseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
             </div>
             <AvatarPicker animal={hostAnimal} onPick={setHostAnimal} taken={[]} />
           </div>
@@ -3740,7 +3804,7 @@ function CreateEnchere({ onCreated, onBack }) {
           <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.05)" }}>
             <div className="flex gap-2 mb-3">
               <input value={hostPseudo} onChange={(e) => setHostPseudo(e.target.value)} placeholder={tr("hostPseudoPlaceholder")} className="flex-1 rounded-xl px-4 py-2" style={{ background: "rgba(255,255,255,0.08)", color: C.cream, border: "2px solid rgba(255,255,255,0.15)" }} />
-              <button onClick={() => setHostPseudo(funPseudo())} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
+              <button onClick={() => setHostPseudo(funPseudo(hostPseudo))} className="rounded-xl px-3" style={{ background: C.gold }}><Sparkles size={18} color="#1B1030" /></button>
             </div>
             <AvatarPicker animal={hostAnimal} onPick={setHostAnimal} taken={[]} />
           </div>
