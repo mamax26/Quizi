@@ -45,23 +45,24 @@ const STRINGS = {
     joinRoomBtn: "Rejoindre la salle",
     exampleLabel: "💡 Exemple concret",
     explainClassicTitle: "Quiz Classique",
-    explainClassicB1: "Réponds juste aux questions.",
+    explainClassicB1: "Réponds aux questions.",
     explainClassicB2: "Plus tu réponds vite, plus tu marques de points.",
     explainClassicB3: "Utilise des jokers pour saboter les autres (ou te blinder).",
     explainClassicB4: "Finis en tête et deviens la légende de la soirée. 👑",
     explainClassicExample: "Sur une question à 20 secondes : réponds juste en 2 secondes → 95 points. Réponds juste à la 19ᵉ seconde → seulement 51 points. Une mauvaise réponse ne rapporte rien (ou un malus si l'hôte l'a activé).",
     explainSoloTitle: "Jouer seul",
-    explainSoloB1: "Teste-toi tranquille, à ton rythme.",
+    explainSoloB1: "Teste-toi à ton rythme.",
     explainSoloB2: "Mode Crash Test : 3 erreurs et t'es cramé. 💀",
     explainSoloB3: "Pas de jokers ici, juste toi contre les questions.",
     explainMatchAmorTitle: "Match Amor",
     explainMatchAmorB1: "Une mauvaise réponse et t'es éliminé direct. ☠️",
-    explainMatchAmorB2: "Si tout le monde se plante (ou cartonne), personne ne saute.",
-    explainMatchAmorB3: "Le dernier survivant rafle toute la mise.",
+    explainMatchAmorB2: "Si tout le monde se plante, personne ne saute.",
+    explainMatchAmorB3: "Le dernier survivant gagne la partie.",
     explainBlindTestTitle: "Blind Test musical",
     explainBlindTestB1: "Le son passe sur l'écran principal, à toi de deviner. 🎧",
-    explainBlindTestB2: "Titre, artiste, année, anecdote... reste concentré.",
+    explainBlindTestB2: "Réponds aux questions.",
     explainBlindTestB3: "Le plus rapide et le plus juste rafle les points.",
+    explainBlindTestB4: "Finis en tête, et deviens la légende de la soirée. 👑",
     explainEnchereTitle: "Quitte ou Double",
     explainEnchereB1: "Tu pars avec un gros tas de points. 💰",
     explainEnchereB2: "Avant chaque question, mise ce que tu veux.",
@@ -303,23 +304,24 @@ const STRINGS = {
     joinRoomBtn: "Join the room",
     exampleLabel: "💡 Concrete example",
     explainClassicTitle: "Classic Quiz",
-    explainClassicB1: "Answer the questions right.",
+    explainClassicB1: "Answer the questions.",
     explainClassicB2: "The faster you answer, the more points you score.",
     explainClassicB3: "Use jokers to sabotage others (or protect yourself).",
     explainClassicB4: "Finish on top and become the legend of the night. 👑",
     explainClassicExample: "On a 20-second question: answer correctly in 2 seconds → 95 points. Answer correctly at second 19 → only 51 points. A wrong answer scores nothing (or a penalty if the host enabled it).",
     explainSoloTitle: "Play Solo",
-    explainSoloB1: "Test yourself, at your own pace.",
+    explainSoloB1: "Test yourself at your own pace.",
     explainSoloB2: "Crash Test mode: 3 mistakes and you're toast. 💀",
     explainSoloB3: "No jokers here, just you against the questions.",
     explainMatchAmorTitle: "Love Match",
     explainMatchAmorB1: "One wrong answer and you're out. ☠️",
-    explainMatchAmorB2: "If everyone flops (or aces it), nobody's eliminated.",
-    explainMatchAmorB3: "The last one standing takes it all.",
+    explainMatchAmorB2: "If everyone flops, nobody's eliminated.",
+    explainMatchAmorB3: "The last one standing wins the game.",
     explainBlindTestTitle: "Music Blind Test",
     explainBlindTestB1: "The sound plays on the main screen, guess away. 🎧",
-    explainBlindTestB2: "Title, artist, year, trivia... stay sharp.",
+    explainBlindTestB2: "Answer the questions.",
     explainBlindTestB3: "Fastest and most accurate wins the points.",
+    explainBlindTestB4: "Finish on top and become the legend of the night. 👑",
     explainEnchereTitle: "Double or Nothing",
     explainEnchereB1: "You start with a big pile of points. 💰",
     explainEnchereB2: "Before each question, bet whatever you want.",
@@ -1814,8 +1816,7 @@ function SoloHome({ onBack, onNormal, onCrash }) {
   return (
     <Stage>
       <ScreenHeader title={tr("soloBtn")} onBack={onBack} color={C.violet} />
-      <p className="text-sm opacity-70 mb-6 text-center">{tr("soloIntro")}</p>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 mt-2">
         <BigButton onClick={onNormal} color={C.teal}>{tr("classicTestMode")}</BigButton>
         <BigButton onClick={onCrash} color={C.pink} icon={Skull}>{tr("crashTestMode")}</BigButton>
       </div>
@@ -4475,6 +4476,7 @@ function QuizAppInner() {
         { text: tr("explainBlindTestB1") },
         { text: tr("explainBlindTestB2") },
         { text: tr("explainBlindTestB3") },
+        { text: tr("explainBlindTestB4") },
       ]}
     />
   );
